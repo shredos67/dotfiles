@@ -1,0 +1,8 @@
+module Caelestia.Config
+linktarget caelestia-configplugin
+optional plugin caelestia-configplugin
+classname Caelestia_ConfigPlugin
+typeinfo caelestia-config.qmltypes
+prefer :/qt/qml/Caelestia/Config/
+depends QtQuick
+

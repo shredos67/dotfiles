@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# this script fixes the border drawing order
+# image borders load first, extra borders load last
+# keep this order or the inner border can vanish
+
+set -eu
+
+hyprpm reload -n
+
+plugin_path="/var/cache/hyprpm/$(id -un)/hyprland-plugins/borders-plus-plus.so"
+
+hyprctl plugin unload "$plugin_path" >/dev/null 2>&1 || true
+hyprctl plugin load "$plugin_path"

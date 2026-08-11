@@ -1,0 +1,353 @@
+#!/usr/bin/env python3
+"""
+this script controls obs for quickshell
+it keeps obs hidden and saves recordings
+change it carefully, recording can fail quietly
+"""
+
+from __future__ import annotations
+
+import base64
+import hashlib
+import json
+import os
+from pathlib import Path
+import socket
+import struct
+import subprocess
+import sys
+import time
+import uuid
+
+HOST = "127.0.0.1"
+PORT = 4455
+HOME = Path.home()
+CONFIG = HOME / ".config/obs-studio/plugin_config/obs-websocket/config.json"
+LOG = HOME / ".local/state/quickshell/obs-recording.log"
+RECORDINGS = HOME / "Videos/Screenrecordings"
+
+class ObsError(RuntimeError):
+    pass
+
+class ObsClient:
+    def __init__(self, timeout: float = 2.0) -> None:
+        self.sock = socket.create_connection((HOST, PORT), timeout=timeout)
+        self.sock.settimeout(timeout)
+        key = base64.b64encode(os.urandom(16)).decode()
+        request = (
+            "GET / HTTP/1.1\r\n"
+            f"Host: {HOST}:{PORT}\r\n"
+            "Upgrade: websocket\r\n"
+            "Connection: Upgrade\r\n"
+            f"Sec-WebSocket-Key: {key}\r\n"
+            "Sec-WebSocket-Version: 13\r\n\r\n"
+        )
+        self.sock.sendall(request.encode())
+        response = b""
+        while b"\r\n\r\n" not in response:
+            response += self.sock.recv(4096)
+        if not response.startswith(b"HTTP/1.1 101"):
+            raise ObsError("OBS rejected the WebSocket connection")
+
+        hello = self._receive_json()
+        if hello.get("op") != 0:
+            raise ObsError("OBS did not send a WebSocket greeting")
+
+        identify: dict[str, object] = {"rpcVersion": 1}
+        authentication = hello.get("d", {}).get("authentication")
+        if authentication:
+            password = json.loads(CONFIG.read_text()).get("server_password", "")
+            secret = base64.b64encode(hashlib.sha256(
+                (password + authentication["salt"]).encode()
+            ).digest()).decode()
+            identify["authentication"] = base64.b64encode(hashlib.sha256(
+                (secret + authentication["challenge"]).encode()
+            ).digest()).decode()
+
+        self._send_json({"op": 1, "d": identify})
+        identified = self._receive_json()
+        if identified.get("op") != 2:
+            raise ObsError("OBS WebSocket authentication failed")
+
+    def close(self) -> None:
+        try:
+            self._send_frame(b"", opcode=8)
+        except OSError:
+            pass
+        self.sock.close()
+
+    def __enter__(self) -> "ObsClient":
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self.close()
+
+    def request(
+        self,
+        request_type: str,
+        request_data: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        request_id = str(uuid.uuid4())
+        payload: dict[str, object] = {
+            "op": 6,
+            "d": {
+                "requestType": request_type,
+                "requestId": request_id,
+            },
+        }
+        if request_data:
+            payload["d"]["requestData"] = request_data
+        self._send_json(payload)
+        while True:
+            message = self._receive_json()
+            if message.get("op") != 7:
+                continue
+            data = message.get("d", {})
+            if data.get("requestId") != request_id:
+                continue
+            result = data.get("requestStatus", {})
+            if not result.get("result", False):
+                comment = result.get("comment", "unknown OBS error")
+                raise ObsError(f"{request_type}: {comment}")
+            return data.get("responseData", {})
+
+    def status(self) -> dict[str, bool]:
+        data = self.request("GetRecordStatus")
+        return {
+            "running": bool(data.get("outputActive", False)),
+            "paused": bool(data.get("outputPaused", False)),
+        }
+
+    def _send_json(self, value: object) -> None:
+        self._send_frame(json.dumps(value, separators=(",", ":")).encode())
+
+    def _send_frame(self, payload: bytes, opcode: int = 1) -> None:
+        mask = os.urandom(4)
+        length = len(payload)
+        header = bytearray([0x80 | opcode])
+        if length < 126:
+            header.append(0x80 | length)
+        elif length < 65536:
+            header.append(0x80 | 126)
+            header.extend(struct.pack("!H", length))
+        else:
+            header.append(0x80 | 127)
+            header.extend(struct.pack("!Q", length))
+        header.extend(mask)
+        masked = bytes(byte ^ mask[index % 4] for index, byte in enumerate(payload))
+        self.sock.sendall(header + masked)
+
+    def _receive_json(self) -> dict[str, object]:
+        while True:
+            opcode, payload = self._receive_frame()
+            if opcode == 9:
+                self._send_frame(payload, opcode=10)
+                continue
+            if opcode == 8:
+                raise ObsError("OBS closed the WebSocket connection")
+            if opcode == 1:
+                return json.loads(payload.decode())
+
+    def _receive_frame(self) -> tuple[int, bytes]:
+        first, second = self._receive_exact(2)
+        opcode = first & 0x0F
+        length = second & 0x7F
+        if length == 126:
+            length = struct.unpack("!H", self._receive_exact(2))[0]
+        elif length == 127:
+            length = struct.unpack("!Q", self._receive_exact(8))[0]
+        mask = self._receive_exact(4) if second & 0x80 else None
+        payload = self._receive_exact(length)
+        if mask:
+            payload = bytes(
+                byte ^ mask[index % 4] for index, byte in enumerate(payload)
+            )
+        return opcode, payload
+
+    def _receive_exact(self, length: int) -> bytes:
+        data = b""
+        while len(data) < length:
+            chunk = self.sock.recv(length - len(data))
+            if not chunk:
+                raise ObsError("OBS closed the WebSocket connection")
+            data += chunk
+        return data
+
+def connect(launch: bool = False) -> ObsClient:
+    if launch:
+        ensure_portals()
+        hide_obs_windows()
+
+    try:
+        return ObsClient()
+    except (OSError, ObsError):
+        if not launch:
+            raise
+
+    RECORDINGS.mkdir(parents=True, exist_ok=True)
+    LOG.parent.mkdir(parents=True, exist_ok=True)
+    log_file = LOG.open("ab")
+    subprocess.Popen(
+        [
+            "obs",
+            "--profile", "Untitled",
+            "--collection", "Untitled",
+            "--scene", "Scene",
+            "--minimize-to-tray",
+            "--disable-missing-files-check",
+        ],
+        stdin=subprocess.DEVNULL,
+        stdout=log_file,
+        stderr=subprocess.STDOUT,
+        start_new_session=True,
+    )
+    log_file.close()
+
+    deadline = time.monotonic() + 25
+    while time.monotonic() < deadline:
+        time.sleep(0.25)
+        hide_obs_windows()
+        try:
+            return ObsClient(timeout=2)
+        except (OSError, ObsError):
+            continue
+    raise ObsError("OBS did not become ready in time")
+
+def ensure_portals() -> None:
+    result = subprocess.run(
+        [
+            "systemctl", "--user", "start",
+            "hyprland-session.target",
+            "xdg-desktop-portal-hyprland.service",
+            "xdg-desktop-portal.service",
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        message = result.stderr.strip() or "could not start the Wayland screen portal"
+        raise ObsError(message)
+
+def hide_obs_windows() -> None:
+    try:
+        clients = json.loads(subprocess.check_output(
+            ["hyprctl", "clients", "-j"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=1,
+        ))
+    except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+        return
+
+    for client in clients:
+        window_class = str(client.get("class", "")).lower()
+        initial_class = str(client.get("initialClass", "")).lower()
+        if "obsproject" not in window_class and window_class != "obs" \
+                and "obsproject" not in initial_class and initial_class != "obs":
+            continue
+        address = client.get("address")
+        if address:
+            window = json.dumps(f"address:{address}")
+            title = str(client.get("title", "")).lower()
+            if "crash detected" in title:
+                dispatcher = (
+                    'hl.dsp.send_shortcut({ mods = "", key = "return", '
+                    f'window = {window} }})'
+                )
+            elif "already running" in title:
+                dispatcher = f"hl.dsp.window.close({{ window = {window} }})"
+            else:
+                dispatcher = (
+                    'hl.dsp.window.move({ workspace = "special:obs-recorder", '
+                    f'follow = false, window = {window} }})'
+                )
+            subprocess.run(
+                ["hyprctl", "dispatch", dispatcher],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+
+def wait_for_capture(client: ObsClient, timeout: float = 45) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            settings = client.request(
+                "GetInputSettings",
+                {"inputName": "Screen Capture (PipeWire)"},
+            ).get("inputSettings", {})
+            active = client.request(
+                "GetSourceActive",
+                {"sourceName": "Screen Capture (PipeWire)"},
+            )
+            if settings.get("RestoreToken") and active.get("videoActive", False):
+                time.sleep(0.5)
+                return
+        except ObsError:
+            pass
+        time.sleep(0.25)
+    raise ObsError("no monitor was granted to the OBS PipeWire source")
+
+def wait_for_record_state(
+    client: ObsClient,
+    expected_running: bool,
+    timeout: float = 8,
+) -> dict[str, bool]:
+    deadline = time.monotonic() + timeout
+    state = client.status()
+    while state["running"] != expected_running and time.monotonic() < deadline:
+        time.sleep(0.1)
+        state = client.status()
+    return state
+
+def notify(message: str) -> None:
+    subprocess.run(
+        ["notify-send", "-a", "quickshell", "screen recorder", message],
+        check=False,
+    )
+
+def main() -> int:
+    action = sys.argv[1] if len(sys.argv) > 1 else "toggle"
+    if action not in {"start", "stop", "toggle", "pause", "resume", "status"}:
+        raise ObsError(f"unknown action: {action}")
+
+    try:
+        with connect(launch=action in {"start", "toggle"}) as client:
+            state = client.status()
+            expected_running: bool | None = None
+            if action == "start" and not state["running"]:
+                wait_for_capture(client)
+                client.request("StartRecord")
+                expected_running = True
+            elif action == "stop" and state["running"]:
+                client.request("StopRecord")
+                expected_running = False
+            elif action == "toggle":
+                if state["running"]:
+                    client.request("StopRecord")
+                    expected_running = False
+                else:
+                    wait_for_capture(client)
+                    client.request("StartRecord")
+                    expected_running = True
+            elif action == "pause" and state["running"] and not state["paused"]:
+                client.request("PauseRecord")
+            elif action == "resume" and state["running"] and state["paused"]:
+                client.request("ResumeRecord")
+            state = wait_for_record_state(client, expected_running) \
+                if expected_running is not None else client.status()
+    except (OSError, ObsError, json.JSONDecodeError) as error:
+        state = {"running": False, "paused": False}
+        if action != "status":
+            print(str(error), file=sys.stderr)
+            notify(str(error))
+            print(json.dumps(state))
+            return 1
+
+    print(json.dumps(state, separators=(",", ":")))
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())

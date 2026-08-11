@@ -1,0 +1,23 @@
+@author "Dustin Pilgrim"
+@Description "Dustin's simple TUI launcher"
+
+# Pywal regenerates this theme whenever the global wallpaper palette changes.
+gather "~/.cache/wal/dstl-theme.rune" as global_theme
+
+dstl:
+    dmenu = false
+    search_position = "top"
+    startup_mode = "single"
+    focus_search_on_switch = true
+    terminal = "foot"
+    timeout = 0
+    max_recent_apps = 15
+    recent_first = false
+
+    theme:
+        border_style = "plain"
+        highlight_type = "background"
+        cursor_shape = "block"
+        cursor_blink_interval = 0
+    end
+end

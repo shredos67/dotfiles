@@ -1,0 +1,8 @@
+module Caelestia.Internal
+linktarget caelestia-internalplugin
+optional plugin caelestia-internalplugin
+classname Caelestia_InternalPlugin
+typeinfo caelestia-internal.qmltypes
+prefer :/qt/qml/Caelestia/Internal/
+depends QtQuick
+

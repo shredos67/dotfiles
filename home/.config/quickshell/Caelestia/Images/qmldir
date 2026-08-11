@@ -1,0 +1,8 @@
+module Caelestia.Images
+linktarget caelestia-imagesplugin
+optional plugin caelestia-imagesplugin
+classname Caelestia_ImagesPlugin
+typeinfo caelestia-images.qmltypes
+prefer :/qt/qml/Caelestia/Images/
+depends QtQuick
+

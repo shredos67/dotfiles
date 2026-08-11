@@ -1,0 +1,8 @@
+module Caelestia
+linktarget caelestia-coreplugin
+optional plugin caelestia-coreplugin
+classname CaelestiaPlugin
+typeinfo caelestia-core.qmltypes
+prefer :/qt/qml/Caelestia/
+depends QtQuick
+

@@ -1,0 +1,47 @@
+#!/bin/sh
+
+# this script colors the floral borders from pywal
+# the gray mask stays clean
+# live images get replaced safely
+
+set -eu
+
+imgborder_cache=${XDG_CACHE_HOME:-"$HOME/.cache"}
+imgborder_palette=${IMGBORDERS_PALETTE:-"$imgborder_cache/wal/colors.json"}
+imgborder_mask=${IMGBORDERS_MASK:-"$HOME/.config/hypr/assets/imgborders-floral-mask.png"}
+imgborder_output=${IMGBORDERS_OUTPUT:-"$HOME/.config/hypr/assets/imgborders-floral.png"}
+imgborder_lock_output=${IMGBORDERS_LOCK_OUTPUT:-"$HOME/.config/hypr/assets/imgborders-floral-lock-wide.png"}
+
+[ -s "$imgborder_palette" ] || exit 0
+[ -s "$imgborder_mask" ] || exit 0
+
+imgborder_accent=$(jq -er '.colors.color4' "$imgborder_palette")
+imgborder_tmp=$(mktemp "${imgborder_output%/*}/.imgborders-floral.XXXXXX.png")
+imgborder_lock_tmp=$(mktemp "${imgborder_lock_output%/*}/.imgborders-floral-lock.XXXXXX.png")
+trap 'rm -f "$imgborder_tmp" "$imgborder_lock_tmp"' EXIT HUP INT TERM
+
+magick "$imgborder_mask" \
+    -fill "$imgborder_accent" \
+    -colorize 100 \
+    "$imgborder_tmp"
+
+magick -size 1412x1254 xc:none \
+    \( "$imgborder_mask" -crop 627x627+0+0 +repage \) \
+    -geometry +16+15 -composite \
+    \( "$imgborder_mask" -crop 627x627+627+0 +repage \) \
+    -geometry +769+15 -composite \
+    \( "$imgborder_mask" -crop 627x627+0+627 +repage \) \
+    -geometry +16+612 -composite \
+    \( "$imgborder_mask" -crop 627x627+627+627 +repage \) \
+    -geometry +769+612 -composite \
+    -fill "$imgborder_accent" \
+    -colorize 100 \
+    -channel A \
+    -evaluate Multiply 0.38 \
+    +channel \
+    "$imgborder_lock_tmp"
+
+chmod 0644 "$imgborder_tmp" "$imgborder_lock_tmp"
+mv -f "$imgborder_tmp" "$imgborder_output"
+mv -f "$imgborder_lock_tmp" "$imgborder_lock_output"
+trap - EXIT HUP INT TERM

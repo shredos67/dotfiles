@@ -1,0 +1,11 @@
+# this file is made by pywal
+# it keeps the old launcher close to the shell colors
+# edit the mapping here
+dstl:
+    theme:
+        border = "{color8}"
+        focus = "{color4}"
+        highlight = "{color6}"
+        cursor_color = "{color6}"
+    end
+end

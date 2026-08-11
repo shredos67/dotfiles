@@ -1,0 +1,82 @@
+
+@define-color theme_bg_color #18191f;
+@define-color theme_fg_color #c5c5c7;
+@define-color theme_base_color #18191f;
+@define-color theme_text_color #c5c5c7;
+@define-color theme_selected_bg_color #996C9A;
+@define-color theme_selected_fg_color #18191f;
+@define-color insensitive_bg_color #212227;
+@define-color insensitive_fg_color #5f6475;
+@define-color insensitive_base_color #212227;
+@define-color theme_unfocused_bg_color #18191f;
+@define-color theme_unfocused_fg_color #5f6475;
+@define-color theme_unfocused_base_color #18191f;
+@define-color theme_unfocused_text_color #5f6475;
+@define-color theme_unfocused_selected_bg_color #5f6475;
+@define-color theme_unfocused_selected_fg_color #c5c5c7;
+@define-color borders #996C9A;
+@define-color unfocused_borders #5f6475;
+@define-color warning_color #F4C76D;
+@define-color error_color #FF7A7A;
+@define-color success_color #75D69A;
+
+window,
+.background {
+    background-color: #18191f;
+    color: #c5c5c7;
+}
+
+headerbar {
+    background-color: #18191f;
+    color: #c5c5c7;
+    border-bottom: 2px solid #996C9A;
+    box-shadow: none;
+}
+
+button,
+entry,
+spinbutton,
+combobox {
+    background-color: #212227;
+    color: #c5c5c7;
+    border-color: #5f6475;
+}
+
+button:hover,
+button:checked {
+    background-color: #2f3035;
+    color: #D3A99C;
+    border-color: #996C9A;
+}
+
+entry:focus,
+button:focus-visible {
+    border-color: #996C9A;
+    outline-color: #996C9A;
+}
+
+menu,
+menuitem,
+popover {
+    background-color: #212227;
+    color: #c5c5c7;
+}
+
+menuitem:hover {
+    background-color: #2f3035;
+    color: #c5c5c7;
+}
+
+tooltip {
+    background-color: #2f3035;
+    color: #c5c5c7;
+}
+
+progressbar progress {
+    background-color: #996C9A;
+}
+
+selection {
+    background-color: #996C9A;
+    color: #18191f;
+}

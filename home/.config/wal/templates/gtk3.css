@@ -1,0 +1,82 @@
+
+@define-color theme_bg_color {background};
+@define-color theme_fg_color {foreground};
+@define-color theme_base_color {background};
+@define-color theme_text_color {foreground};
+@define-color theme_selected_bg_color {color4};
+@define-color theme_selected_fg_color {background};
+@define-color insensitive_bg_color {background.lighten(4)};
+@define-color insensitive_fg_color {color8};
+@define-color insensitive_base_color {background.lighten(4)};
+@define-color theme_unfocused_bg_color {background};
+@define-color theme_unfocused_fg_color {color8};
+@define-color theme_unfocused_base_color {background};
+@define-color theme_unfocused_text_color {color8};
+@define-color theme_unfocused_selected_bg_color {color8};
+@define-color theme_unfocused_selected_fg_color {foreground};
+@define-color borders {color4};
+@define-color unfocused_borders {color8};
+@define-color warning_color #F4C76D;
+@define-color error_color #FF7A7A;
+@define-color success_color #75D69A;
+
+window,
+.background {{
+    background-color: {background};
+    color: {foreground};
+}}
+
+headerbar {{
+    background-color: {background};
+    color: {foreground};
+    border-bottom: 2px solid {color4};
+    box-shadow: none;
+}}
+
+button,
+entry,
+spinbutton,
+combobox {{
+    background-color: {background.lighten(4)};
+    color: {foreground};
+    border-color: {color8};
+}}
+
+button:hover,
+button:checked {{
+    background-color: {background.lighten(10)};
+    color: {color6};
+    border-color: {color4};
+}}
+
+entry:focus,
+button:focus-visible {{
+    border-color: {color4};
+    outline-color: {color4};
+}}
+
+menu,
+menuitem,
+popover {{
+    background-color: {background.lighten(4)};
+    color: {foreground};
+}}
+
+menuitem:hover {{
+    background-color: {background.lighten(10)};
+    color: {foreground};
+}}
+
+tooltip {{
+    background-color: {background.lighten(10)};
+    color: {foreground};
+}}
+
+progressbar progress {{
+    background-color: {color4};
+}}
+
+selection {{
+    background-color: {color4};
+    color: {background};
+}}

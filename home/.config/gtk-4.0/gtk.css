@@ -1,0 +1,135 @@
+
+@define-color window_bg_color #18191f;
+@define-color window_fg_color #c5c5c7;
+@define-color view_bg_color #18191f;
+@define-color view_fg_color #c5c5c7;
+@define-color headerbar_bg_color #18191f;
+@define-color headerbar_fg_color #c5c5c7;
+@define-color headerbar_border_color #996C9A;
+@define-color headerbar_backdrop_color #18191f;
+@define-color sidebar_bg_color #18191f;
+@define-color sidebar_fg_color #c5c5c7;
+@define-color sidebar_backdrop_color #18191f;
+@define-color secondary_sidebar_bg_color #212227;
+@define-color secondary_sidebar_fg_color #c5c5c7;
+@define-color card_bg_color #212227;
+@define-color card_fg_color #c5c5c7;
+@define-color popover_bg_color #212227;
+@define-color popover_fg_color #c5c5c7;
+@define-color dialog_bg_color #18191f;
+@define-color dialog_fg_color #c5c5c7;
+@define-color accent_bg_color #996C9A;
+@define-color accent_fg_color #18191f;
+@define-color accent_color #996C9A;
+@define-color destructive_bg_color #FF7A7A;
+@define-color destructive_fg_color #18191f;
+@define-color warning_bg_color #F4C76D;
+@define-color warning_fg_color #18191f;
+@define-color success_bg_color #75D69A;
+@define-color success_fg_color #18191f;
+@define-color borders #996C9A;
+@define-color unfocused_borders #5f6475;
+
+window.background,
+window > contents,
+.background {
+    background-color: #18191f;
+    color: #c5c5c7;
+}
+
+headerbar {
+    background-color: #18191f;
+    color: #c5c5c7;
+    border-bottom: 2px solid #996C9A;
+    box-shadow: none;
+}
+
+headerbar button,
+headerbar entry {
+    border-color: #5f6475;
+}
+
+headerbar button:hover,
+headerbar button:checked {
+    background-color: #2f3035;
+    color: #D3A99C;
+}
+
+navigation-sidebar,
+.navigation-sidebar,
+placessidebar,
+placessidebar list {
+    background-color: #18191f;
+    color: #c5c5c7;
+    border-right: 1px solid #5f6475;
+}
+
+navigation-sidebar row,
+.navigation-sidebar row,
+placessidebar row {
+    color: #c5c5c7;
+    border-radius: 8px;
+}
+
+navigation-sidebar row:hover,
+.navigation-sidebar row:hover,
+placessidebar row:hover {
+    background-color: #212227;
+}
+
+navigation-sidebar row:selected,
+.navigation-sidebar row:selected,
+placessidebar row:selected {
+    background-color: #2f3035;
+    color: #D3A99C;
+}
+
+listview,
+gridview,
+columnview,
+treeview.view,
+.view {
+    background-color: #18191f;
+    color: #c5c5c7;
+}
+
+listview row:selected,
+gridview child:selected,
+columnview row:selected,
+.view:selected {
+    background-color: #2f3035;
+    color: #c5c5c7;
+    outline: 1px solid #996C9A;
+    outline-offset: -1px;
+}
+
+entry:focus,
+button:focus-visible {
+    outline-color: #996C9A;
+}
+
+popover contents,
+menu,
+.menu {
+    background-color: #212227;
+    color: #c5c5c7;
+    border: 1px solid #996C9A;
+}
+
+tooltip {
+    background-color: #2f3035;
+    color: #c5c5c7;
+}
+
+separator {
+    background-color: #5f6475;
+}
+
+progressbar progress {
+    background-color: #996C9A;
+}
+
+selection {
+    background-color: #996C9A;
+    color: #18191f;
+}

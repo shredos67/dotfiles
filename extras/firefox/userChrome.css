@@ -1,0 +1,23 @@
+#urlbar-input,
+.searchbar-textbox {
+    font-family: "DejaVu Sans Mono", monospace !important;
+    font-size: 14px !important;
+}
+
+.tab-label,
+.urlbarView,
+#sidebar-box,
+menupopup,
+panelview,
+.panel-subview-body,
+.subviewbutton,
+notification-message {
+    font-family: "DejaVu Sans Mono", monospace !important;
+}
+
+.tab-label,
+#PersonalToolbar,
+.urlbarView,
+#sidebar-box {
+    font-size: 13px !important;
+}

@@ -1,0 +1,13 @@
+[Icon Theme]
+Name=Pywal
+Comment=Adwaita with wallpaper-synchronised folder colours
+Inherits=Adwaita,hicolor
+Example=folder
+Directories=scalable/places
+
+[scalable/places]
+Context=Places
+Size=128
+MinSize=8
+MaxSize=512
+Type=Scalable

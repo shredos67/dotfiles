@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# this script toggles the old terminal launcher
+# it closes the old window before making a new one
+# keep the window class the same
+
+set -eu
+
+launcher_class=dstl-launcher
+
+if hyprctl clients -j 2>/dev/null \
+    | jq -e --arg class "$launcher_class" 'any(.[]; .class == $class)' \
+        >/dev/null 2>&1; then
+    exec hyprctl dispatch closewindow "class:^${launcher_class}$"
+fi
+
+exec foot \
+    --app-id="$launcher_class" \
+    --title=dstl \
+    --window-size-chars=78x24 \
+    /usr/local/bin/dstl

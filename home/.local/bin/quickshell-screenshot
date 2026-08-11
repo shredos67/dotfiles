@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+# this script grabs one selected area
+# screenshots go into the pictures folder
+# closing slurp cancels it quietly
+
+set -u
+
+picture_root="${XDG_PICTURES_DIR:-${HOME}/Pictures}"
+output_dir="${picture_root}/Screenshots"
+mkdir -p "${output_dir}"
+
+geometry="$(slurp)" || exit 0
+output_file="${output_dir}/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png"
+
+grim -g "${geometry}" "${output_file}"
+
+if command -v notify-send >/dev/null 2>&1; then
+    notify-send "Screenshot saved" "${output_file}"
+fi

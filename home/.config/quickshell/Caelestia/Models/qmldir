@@ -1,0 +1,7 @@
+module Caelestia.Models
+linktarget caelestia-modelsplugin
+optional plugin caelestia-modelsplugin
+classname Caelestia_ModelsPlugin
+typeinfo caelestia-models.qmltypes
+prefer :/qt/qml/Caelestia/Models/
+

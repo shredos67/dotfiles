@@ -1,0 +1,115 @@
+#!/bin/sh
+
+# this script colors the fastfetch art from pywal
+# it also updates open terminals
+# the raw art stays clean
+
+set -eu
+
+cache_home=${XDG_CACHE_HOME:-"$HOME/.cache"}
+wal_colors=${FASTFETCH_WAL_COLORS:-"$cache_home/wal/colors.json"}
+source_art=${FASTFETCH_SOURCE_ART:-"$HOME/.config/fastfetch/L_ascii.raw.txt"}
+target_art=${FASTFETCH_ART_OUTPUT:-"$HOME/.config/fastfetch/L_ascii.txt"}
+sequence_file=${FASTFETCH_SEQUENCE_OUTPUT:-"$cache_home/wal/fastfetch-sequences"}
+send_terminals=${FASTFETCH_SEND_TERMINALS:-1}
+
+if [ ! -s "$wal_colors" ] || [ ! -s "$source_art" ]; then
+    exit 0
+fi
+
+gradient_start=$(jq -er '.colors.color3' "$wal_colors")
+gradient_middle=$(jq -er '.colors.color5' "$wal_colors")
+gradient_end=$(jq -er '.colors.color6' "$wal_colors")
+
+read_rgb() {
+    rgb_hex=${1#\#}
+    case "$rgb_hex" in
+        [0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]) ;;
+        *)
+            echo "Invalid Pywal colour: $1" >&2
+            exit 1
+            ;;
+    esac
+
+    rgb_red_hex=$(printf '%.2s' "$rgb_hex")
+    rgb_tail=${rgb_hex#??}
+    rgb_green_hex=$(printf '%.2s' "$rgb_tail")
+    rgb_blue_hex=${rgb_tail#??}
+    rgb_red=$((0x$rgb_red_hex))
+    rgb_green=$((0x$rgb_green_hex))
+    rgb_blue=$((0x$rgb_blue_hex))
+}
+
+read_rgb "$gradient_start"
+start_red=$rgb_red
+start_green=$rgb_green
+start_blue=$rgb_blue
+
+read_rgb "$gradient_middle"
+middle_red=$rgb_red
+middle_green=$rgb_green
+middle_blue=$rgb_blue
+
+read_rgb "$gradient_end"
+end_red=$rgb_red
+end_green=$rgb_green
+end_blue=$rgb_blue
+
+line_count=$(wc -l < "$source_art")
+if [ "$line_count" -lt 2 ]; then
+    exit 0
+fi
+
+middle_index=$(((line_count - 1) / 2))
+last_index=$((line_count - 1))
+second_span=$((last_index - middle_index))
+temporary_art=$(mktemp "$target_art.tmp.XXXXXX")
+temporary_sequences=$(mktemp "$sequence_file.tmp.XXXXXX")
+trap 'rm -f "$temporary_art" "$temporary_sequences"' EXIT HUP INT TERM
+
+line_index=0
+while IFS= read -r art_line || [ -n "$art_line" ]; do
+    if [ "$line_index" -le "$middle_index" ]; then
+        blend_position=$line_index
+        blend_span=$middle_index
+        from_red=$start_red
+        from_green=$start_green
+        from_blue=$start_blue
+        to_red=$middle_red
+        to_green=$middle_green
+        to_blue=$middle_blue
+    else
+        blend_position=$((line_index - middle_index))
+        blend_span=$second_span
+        from_red=$middle_red
+        from_green=$middle_green
+        from_blue=$middle_blue
+        to_red=$end_red
+        to_green=$end_green
+        to_blue=$end_blue
+    fi
+
+    line_red=$((from_red + (to_red - from_red) * blend_position / blend_span))
+    line_green=$((from_green + (to_green - from_green) * blend_position / blend_span))
+    line_blue=$((from_blue + (to_blue - from_blue) * blend_position / blend_span))
+    palette_index=$((16 + line_index))
+
+    printf '\033[38;5;%dm%s\033[0m\n' \
+        "$palette_index" "$art_line" >> "$temporary_art"
+    printf '\033]4;%d;#%02x%02x%02x\033\\' \
+        "$palette_index" "$line_red" "$line_green" "$line_blue" >> "$temporary_sequences"
+    line_index=$((line_index + 1))
+done < "$source_art"
+
+chmod 0644 "$temporary_art"
+chmod 0644 "$temporary_sequences"
+mv -f "$temporary_art" "$target_art"
+mv -f "$temporary_sequences" "$sequence_file"
+trap - EXIT HUP INT TERM
+
+if [ "$send_terminals" != 0 ]; then
+    for terminal_device in /dev/pts/[0-9]*; do
+        [ -w "$terminal_device" ] || continue
+        cat "$sequence_file" > "$terminal_device" 2>/dev/null || true
+    done
+fi

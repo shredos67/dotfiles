@@ -1,0 +1,135 @@
+
+@define-color window_bg_color {background};
+@define-color window_fg_color {foreground};
+@define-color view_bg_color {background};
+@define-color view_fg_color {foreground};
+@define-color headerbar_bg_color {background};
+@define-color headerbar_fg_color {foreground};
+@define-color headerbar_border_color {color4};
+@define-color headerbar_backdrop_color {background};
+@define-color sidebar_bg_color {background};
+@define-color sidebar_fg_color {foreground};
+@define-color sidebar_backdrop_color {background};
+@define-color secondary_sidebar_bg_color {background.lighten(4)};
+@define-color secondary_sidebar_fg_color {foreground};
+@define-color card_bg_color {background.lighten(4)};
+@define-color card_fg_color {foreground};
+@define-color popover_bg_color {background.lighten(4)};
+@define-color popover_fg_color {foreground};
+@define-color dialog_bg_color {background};
+@define-color dialog_fg_color {foreground};
+@define-color accent_bg_color {color4};
+@define-color accent_fg_color {background};
+@define-color accent_color {color4};
+@define-color destructive_bg_color #FF7A7A;
+@define-color destructive_fg_color {background};
+@define-color warning_bg_color #F4C76D;
+@define-color warning_fg_color {background};
+@define-color success_bg_color #75D69A;
+@define-color success_fg_color {background};
+@define-color borders {color4};
+@define-color unfocused_borders {color8};
+
+window.background,
+window > contents,
+.background {{
+    background-color: {background};
+    color: {foreground};
+}}
+
+headerbar {{
+    background-color: {background};
+    color: {foreground};
+    border-bottom: 2px solid {color4};
+    box-shadow: none;
+}}
+
+headerbar button,
+headerbar entry {{
+    border-color: {color8};
+}}
+
+headerbar button:hover,
+headerbar button:checked {{
+    background-color: {background.lighten(10)};
+    color: {color6};
+}}
+
+navigation-sidebar,
+.navigation-sidebar,
+placessidebar,
+placessidebar list {{
+    background-color: {background};
+    color: {foreground};
+    border-right: 1px solid {color8};
+}}
+
+navigation-sidebar row,
+.navigation-sidebar row,
+placessidebar row {{
+    color: {foreground};
+    border-radius: 8px;
+}}
+
+navigation-sidebar row:hover,
+.navigation-sidebar row:hover,
+placessidebar row:hover {{
+    background-color: {background.lighten(4)};
+}}
+
+navigation-sidebar row:selected,
+.navigation-sidebar row:selected,
+placessidebar row:selected {{
+    background-color: {background.lighten(10)};
+    color: {color6};
+}}
+
+listview,
+gridview,
+columnview,
+treeview.view,
+.view {{
+    background-color: {background};
+    color: {foreground};
+}}
+
+listview row:selected,
+gridview child:selected,
+columnview row:selected,
+.view:selected {{
+    background-color: {background.lighten(10)};
+    color: {foreground};
+    outline: 1px solid {color4};
+    outline-offset: -1px;
+}}
+
+entry:focus,
+button:focus-visible {{
+    outline-color: {color4};
+}}
+
+popover contents,
+menu,
+.menu {{
+    background-color: {background.lighten(4)};
+    color: {foreground};
+    border: 1px solid {color4};
+}}
+
+tooltip {{
+    background-color: {background.lighten(10)};
+    color: {foreground};
+}}
+
+separator {{
+    background-color: {color8};
+}}
+
+progressbar progress {{
+    background-color: {color4};
+}}
+
+selection {{
+    background-color: {color4};
+    color: {background};
+}}

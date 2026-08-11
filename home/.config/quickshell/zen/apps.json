@@ -1,0 +1,11 @@
+{
+  "apps": [
+    { "name": "TERMINAL", "icon": "foot",             "exec": "foot",                          "comment": "command line" },
+    { "name": "FIREFOX",  "icon": "firefox",          "exec": "firefox",                       "comment": "web browser" },
+    { "name": "LEGCORD",  "icon": "__HOME__/Legcord/build/icon.png", "exec": "__HOME__/Legcord/dist/linux-arm64-unpacked/legcord", "comment": "discord client" },
+    { "name": "FILES",    "icon": "org.gnome.Nautilus", "exec": "nautilus",                      "comment": "file manager" },
+    { "name": "CODIUM",   "icon": "vscodium",           "exec": "codium",                        "comment": "code editor" },
+    { "name": "SYSTEM",   "icon": "btop",             "exec": "foot btop",                     "comment": "process monitor" },
+    { "name": "SPOTIFY",  "icon": "spotify-player",   "exec": "foot __HOME__/.cargo/bin/spotify_player", "comment": "music player" }
+  ]
+}
