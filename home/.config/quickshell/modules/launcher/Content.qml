@@ -16,12 +16,13 @@ Item {
     required property ScreenState screenState
     required property var panels
     required property real maxHeight
+    property bool animateGeometry: true
 
     readonly property int padding: Tokens.padding.large
-    readonly property int rounding: 0
+    readonly property int rounding: ShellConfig.visuals.cardRadius
 
     implicitWidth: ShellConfig.bar.launcherPanelWidth
-    implicitHeight: header.height + listWrapper.height + search.height
+    implicitHeight: header.height + listWrapper.implicitHeight + search.height
         + padding * 3 + search.anchors.bottomMargin
 
     Item {
@@ -42,14 +43,14 @@ Item {
                 horizontalCenter: parent.horizontalCenter
                 top: parent.top
             }
-            text: "App Launcher"
-            color: Theme.moduleLabel
+            text: "applications"
+            color: Theme.moduleValue
             renderType: Text.NativeRendering
             font {
                 family: ShellConfig.typography.monoFamily
                 styleName: ShellConfig.typography.fineStyle
                 pixelSize: ShellConfig.bar.launcherNameSize + 1
-                letterSpacing: ShellConfig.bar.labelLetterSpacing * 1.5
+                letterSpacing: ShellConfig.bar.labelLetterSpacing * 1.25
             }
         }
 
@@ -59,8 +60,8 @@ Item {
                 top: parent.top
                 topMargin: ShellConfig.bar.launcherNameSize + 8
             }
-            text: "enter to launch"
-            color: Theme.textMuted
+            text: "type to search, enter to open"
+            color: Theme.moduleLabel
             renderType: Text.NativeRendering
             font {
                 family: ShellConfig.typography.monoFamily
@@ -80,7 +81,7 @@ Item {
 
             Rectangle {
                 anchors.centerIn: parent
-                width: parent.width
+                width: parent.width - ShellConfig.bar.launcherOrnamentSize * 1.4
                 height: ShellConfig.bar.hairlineThickness
                 color: Theme.frameBorderFaint
             }
@@ -94,6 +95,30 @@ Item {
                 border.width: ShellConfig.bar.hairlineThickness
                 border.color: Theme.frameBorderSoft
             }
+
+            Rectangle {
+                anchors {
+                    verticalCenter: parent.verticalCenter
+                    left: parent.left
+                    leftMargin: ShellConfig.bar.launcherOrnamentSize * 0.72
+                }
+                width: ShellConfig.bar.separatorDiamondSize / 2
+                height: width
+                radius: width / 2
+                color: Theme.moduleLabel
+            }
+
+            Rectangle {
+                anchors {
+                    verticalCenter: parent.verticalCenter
+                    right: parent.right
+                    rightMargin: ShellConfig.bar.launcherOrnamentSize * 0.72
+                }
+                width: ShellConfig.bar.separatorDiamondSize / 2
+                height: width
+                radius: width / 2
+                color: Theme.moduleLabel
+            }
         }
     }
 
@@ -102,7 +127,11 @@ Item {
 
         width: root.width - root.padding * 2
         implicitWidth: width
-        implicitHeight: list.height + root.padding
+        implicitHeight: list.implicitHeight + root.padding
+        height: root.animateGeometry
+            ? implicitHeight
+            : Math.max(0, root.height - header.height - search.height
+                - root.padding * 3 - search.anchors.bottomMargin)
 
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: search.top
@@ -120,6 +149,22 @@ Item {
             search: search
             padding: root.padding
             rounding: root.rounding
+            animateGeometry: root.animateGeometry
+        }
+    }
+
+    Rectangle {
+        anchors.fill: search
+        anchors.margins: -ShellConfig.frame.lineThickness
+        radius: ShellConfig.bar.launcherSearchRadius
+            + ShellConfig.frame.lineThickness
+        color: Theme.frameGlow
+        opacity: search.activeFocus ? 1 : 0
+
+        Behavior on opacity {
+            Anim {
+                type: Anim.DefaultEffects
+            }
         }
     }
 
@@ -142,13 +187,14 @@ Item {
         font.family: ShellConfig.typography.monoFamily
         font.styleName: ShellConfig.typography.fineStyle
         font.pixelSize: ShellConfig.bar.launcherNameSize
-        bg.color: Theme.panelRaised
-        bg.radius: 0
-        bg.border.width: ShellConfig.bar.hairlineThickness
+        z: 1
+        bg.color: activeFocus ? Theme.panelHighlight : Theme.panelRaised
+        bg.radius: ShellConfig.bar.launcherSearchRadius
+        bg.border.width: ShellConfig.bar.buttonBorderWidth
         bg.border.color: activeFocus ? Theme.frameBorder : Theme.frameBorderFaint
         searchIcon.color: Theme.moduleLabel
 
-        placeholderText: qsTr("Search applications…")
+        placeholderText: qsTr("search applications…")
 
         onAccepted: {
             const currentItem = list.currentList?.currentItem;

@@ -103,8 +103,11 @@ Item {
 		Anim {}
 	}
 
-	Ref {
-		service: NetworkUsage
+	Loader {
+		active: root.shouldOpen
+		sourceComponent: Ref {
+			service: NetworkUsage
+		}
 	}
 
 	PopupBridge {

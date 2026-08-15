@@ -18,6 +18,7 @@ Item {
     required property SearchBar search
     required property int padding
     required property int rounding
+    property bool animateGeometry: true
 
     readonly property bool showWallpapers: false
     readonly property var currentList: appList.item
@@ -26,6 +27,9 @@ Item {
 
     anchors.horizontalCenter: parent.horizontalCenter
     anchors.bottom: parent.bottom
+    height: root.animateGeometry
+        ? implicitHeight
+        : Math.max(0, (parent?.height ?? implicitHeight) - root.padding)
 
     clip: true
     state: animState
@@ -90,7 +94,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
 
             StyledText {
-                text: qsTr("No results")
+                text: qsTr("no results")
                 color: Theme.moduleValue
                 font.family: ShellConfig.typography.monoFamily
                 font.styleName: ShellConfig.typography.fineStyle
@@ -98,7 +102,7 @@ Item {
             }
 
             StyledText {
-                text: qsTr("Try searching for something else")
+                text: qsTr("try another name")
                 color: Theme.textMuted
                 font.family: ShellConfig.typography.monoFamily
                 font.pixelSize: ShellConfig.bar.launcherDetailSize
@@ -117,13 +121,13 @@ Item {
     }
 
     Behavior on implicitWidth {
-        enabled: root.screenState.launcher
+        enabled: root.screenState.launcher && root.animateGeometry
 
         Anim {}
     }
 
     Behavior on implicitHeight {
-        enabled: root.screenState.launcher
+        enabled: root.screenState.launcher && root.animateGeometry
 
         Anim {}
     }

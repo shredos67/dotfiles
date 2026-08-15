@@ -1,0 +1,19 @@
+{
+  "dockEnabled": true,
+  "dockAutoHide": false,
+  "dockMagnification": true,
+  "dockTray": true,
+  "shadows": true,
+  "ornaments": true,
+  "translucent": true,
+  "motionEnabled": true,
+  "animationScale": 1.0,
+  "iconSize": 42,
+  "dockMargin": 14,
+  "interfaceScale": 1.2,
+  "popupRadius": 12.0,
+  "barHeight": 50,
+  "drawerRadius": 26.0,
+  "accentStyle": 0,
+  "pinnedIds": "org.mozilla.firefox|foot|org.gnome.Nautilus|app.legcord.Legcord"
+}

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Shell Settings
+Comment=Adjust the desktop shell
+Icon=preferences-desktop-theme
+Exec=qs ipc call settings toggle
+Terminal=false
+Categories=Settings;DesktopSettings;
+Keywords=shell;appearance;dock;theme;
+StartupNotify=false

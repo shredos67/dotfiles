@@ -1,11 +1,12 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Caelestia.Config
 import qs.components
 
-Rectangle {
+StyledClippingRect {
     id: root
 
     required property var notification
@@ -13,26 +14,37 @@ Rectangle {
     property bool animateEntrance: true
 
     readonly property int cardPadding: ShellConfig.notifications.cardPadding
-    readonly property bool hasBody: (notification.body ?? "").trim().length > 0
-    readonly property bool hasActions: (notification.actions?.length ?? 0) > 0
-    readonly property bool hasImage: (notification.image ?? "").length > 0
-    readonly property bool hasAppIcon: (notification.appIcon ?? "").length > 0
-    readonly property color accent: notification.urgency === 2
+    readonly property bool hasBody: (notification?.body ?? "").trim().length > 0
+    readonly property bool hasActions: (notification?.actions?.length ?? 0) > 0
+    readonly property bool hasImage: (notification?.image ?? "").length > 0
+    readonly property bool hasAppIcon: (notification?.appIcon ?? "").length > 0
+    readonly property color accent: notification?.urgency === 2
         ? Theme.statusDanger
-        : notification.urgency === 0 ? Theme.accentTertiary : Theme.accentPrimary
+        : notification?.urgency === 0 ? Theme.accentTertiary : Theme.accentPrimary
 
     width: parent?.width ?? implicitWidth
     implicitWidth: ShellConfig.notifications.toastWidth
     implicitHeight: content.implicitHeight + cardPadding * 2 + 4
-    radius: 0
+    radius: ShellConfig.notifications.cardRadius
     color: Theme.panelRaised
     border.width: ShellConfig.notifications.borderWidth
-    border.color: notification.urgency === 2
+    border.color: notification?.urgency === 2
         ? Theme.statusDanger
         : Theme.frameBorderSoft
-    clip: true
+    contentUnderBorder: true
+    layer.enabled: root.popupMode && FloralSettings.shadows
+    layer.effect: MultiEffect {
+        shadowEnabled: true
+        shadowColor: Theme.shadowColor
+        shadowOpacity: ShellConfig.visuals.shadowOpacity
+        shadowBlur: 0.82
+        shadowVerticalOffset: ShellConfig.visuals.shadowOffsetY
+        blurMax: ShellConfig.visuals.shadowBlur
+    }
 
     Component.onCompleted: {
+        if (!notification)
+            return;
         notification.lock(root);
         if (animateEntrance) {
             root.x = -Math.round(root.width * 0.16);
@@ -45,15 +57,17 @@ Rectangle {
             });
         }
     }
-    Component.onDestruction: notification.unlock(root)
+    Component.onDestruction: {
+        if (notification)
+            notification.unlock(root);
+    }
 
     Behavior on x { Anim {} }
 
     Behavior on scale {
         NumberAnimation {
             duration: ShellConfig.notifications.animationMs
-            easing.type: Easing.OutBack
-            easing.overshoot: 0.7
+            easing.type: Easing.OutCubic
         }
     }
 
@@ -72,6 +86,30 @@ Rectangle {
         opacity: 0.72
     }
 
+    FloralCorner {
+        anchors {
+            right: parent.right
+            top: parent.top
+        }
+        width: Math.min(root.width * 0.32,
+            ShellConfig.notifications.notificationOrnamentSize * 0.72)
+        height: width
+        location: FloralCorner.TopRight
+        strength: root.popupMode ? 0.28 : 0.2
+    }
+
+    FloralCorner {
+        anchors {
+            left: parent.left
+            bottom: parent.bottom
+        }
+        width: Math.min(root.width * 0.26,
+            ShellConfig.notifications.notificationOrnamentSize * 0.58)
+        height: width
+        location: FloralCorner.BottomLeft
+        strength: root.popupMode ? 0.18 : 0.12
+    }
+
     Rectangle {
         anchors {
             left: parent.left
@@ -87,7 +125,8 @@ Rectangle {
         anchors.fill: parent
         anchors.margins: Math.max(4, ShellConfig.notifications.panelInnerInset - 2)
         color: "transparent"
-        radius: 0
+        radius: Math.max(0, root.radius
+            - Math.max(4, ShellConfig.notifications.panelInnerInset - 2))
         border.width: ShellConfig.notifications.borderWidth
         border.color: Theme.frameBorderFaint
     }
@@ -109,22 +148,22 @@ Rectangle {
             height: Math.max(iconFrame.height, heading.implicitHeight, closeButton.height)
             spacing: ShellConfig.notifications.cardSpacing
 
-            Rectangle {
+            StyledClippingRect {
                 id: iconFrame
 
                 width: ShellConfig.notifications.iconSize
                 height: width
                 anchors.verticalCenter: parent.verticalCenter
-                radius: 0
+                radius: ShellConfig.visuals.controlRadius
                 color: Theme.panel
                 border.width: ShellConfig.notifications.borderWidth
                 border.color: root.accent
-                clip: true
+                contentUnderBorder: true
 
                 Rectangle {
                     anchors.fill: parent
                     anchors.margins: 4
-                    radius: 0
+                    radius: Math.max(0, iconFrame.radius - 4)
                     color: "transparent"
                     border.width: 1
                     border.color: Theme.frameBorderFaint
@@ -136,9 +175,9 @@ Rectangle {
                     anchors.fill: parent
                     anchors.margins: root.hasImage ? 2 : Math.round(parent.width * 0.18)
                     source: root.hasImage
-                        ? Qt.resolvedUrl(root.notification.image)
+                        ? Qt.resolvedUrl(root.notification?.image ?? "")
                         : root.hasAppIcon
-                            ? Quickshell.iconPath(root.notification.appIcon, true)
+                            ? Quickshell.iconPath(root.notification?.appIcon ?? "", true)
                             : ""
                     fillMode: root.hasImage ? Image.PreserveAspectCrop : Image.PreserveAspectFit
                     asynchronous: true
@@ -166,7 +205,7 @@ Rectangle {
 
                 Text {
                     width: parent.width
-                    text: (root.notification.summary || "notification").toLowerCase()
+                    text: (root.notification?.summary || "notification").toLowerCase()
                     color: Theme.moduleValue
                     elide: Text.ElideRight
                     maximumLineCount: root.popupMode ? 1 : 2
@@ -181,7 +220,7 @@ Rectangle {
 
                 Text {
                     width: parent.width
-                    text: `${root.notification.appName || "system"}  ·  ${root.notification.timeStr || "now"}`.toLowerCase()
+                    text: `${root.notification?.appName || "system"}  ·  ${root.notification?.timeStr || "now"}`.toLowerCase()
                     color: Theme.moduleLabel
                     elide: Text.ElideRight
                     renderType: Text.NativeRendering
@@ -205,13 +244,13 @@ Rectangle {
                 Behavior on scale {
                     NumberAnimation {
                         duration: ShellConfig.bar.menuAnimationMs
-                        easing.type: Easing.OutBack
+                        easing.type: Easing.OutCubic
                     }
                 }
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: 0
+                    radius: ShellConfig.visuals.controlRadius
                     color: closePointer.containsMouse ? Theme.panelHighlight : Theme.panel
                     border.width: ShellConfig.notifications.borderWidth
                     border.color: closePointer.containsMouse
@@ -231,22 +270,41 @@ Rectangle {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.notification.close()
+                    onClicked: {
+                        if (root.notification)
+                            root.notification.close();
+                    }
                 }
             }
         }
 
-        Rectangle {
+        Item {
             width: parent.width
-            height: 2
+            height: ShellConfig.bar.separatorDiamondSize + 2
             visible: root.hasBody
-            color: Theme.frameBorderFaint
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: parent.width
+                height: ShellConfig.notifications.borderWidth
+                color: Theme.frameBorderFaint
+            }
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: ShellConfig.bar.separatorDiamondSize
+                height: width
+                rotation: 45
+                color: Theme.panelRaised
+                border.width: ShellConfig.bar.hairlineThickness
+                border.color: root.accent
+            }
         }
 
         Text {
             width: parent.width
             visible: root.hasBody
-            text: (root.notification.body ?? "").toLowerCase()
+            text: (root.notification?.body ?? "").toLowerCase()
             color: Theme.textMuted
             textFormat: /[<>]/.test(text) ? Text.StyledText : Text.PlainText
             wrapMode: Text.Wrap
@@ -266,7 +324,7 @@ Rectangle {
             spacing: Math.round(ShellConfig.notifications.cardSpacing * 0.65)
 
             Repeater {
-                model: root.notification.actions ?? []
+                model: root.notification?.actions ?? []
 
                 delegate: Rectangle {
                     id: actionButton
@@ -275,7 +333,7 @@ Rectangle {
 
                     width: actionLabel.implicitWidth + ShellConfig.notifications.cardPadding * 1.5
                     height: ShellConfig.notifications.actionHeight
-                    radius: 0
+                    radius: ShellConfig.visuals.controlRadius
                     color: actionPointer.containsMouse ? Theme.panelHighlight : Theme.panel
                     border.width: ShellConfig.notifications.borderWidth
                     border.color: actionPointer.containsMouse
@@ -286,7 +344,7 @@ Rectangle {
                     Behavior on scale {
                         NumberAnimation {
                             duration: ShellConfig.bar.menuAnimationMs
-                            easing.type: Easing.OutBack
+                            easing.type: Easing.OutCubic
                         }
                     }
 
@@ -312,7 +370,8 @@ Rectangle {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             actionButton.modelData.invoke();
-                            root.notification.popup = false;
+                            if (root.notification)
+                                root.notification.popup = false;
                         }
                     }
                 }
@@ -322,12 +381,13 @@ Rectangle {
 
     HoverHandler {
         onHoveredChanged: {
-            if (!root.popupMode)
+            const activeNotification = root.notification;
+            if (!root.popupMode || !activeNotification)
                 return;
             if (hovered)
-                root.notification.timer.stop();
+                activeNotification.timer.stop();
             else
-                root.notification.timer.start();
+                activeNotification.timer.start();
         }
     }
 }

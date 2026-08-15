@@ -20,10 +20,14 @@ ShellRoot {
 	id: root
 
 	property int brightnessPercentage: 0
+	property bool calendarOpen: false
 	readonly property var audioSink: Pipewire.defaultAudioSink
 	readonly property real volume: audioSink && audioSink.audio
 		? audioSink.audio.volume
 		: 0
+	readonly property bool muted: audioSink && audioSink.audio
+		? audioSink.audio.muted
+		: false
 
 	function readBrightness(output: string): void {
 		const fields = output.trim().split(",")
@@ -56,6 +60,22 @@ ShellRoot {
 		audioSink.audio.volume = Math.max(0, Math.min(1, value))
 	}
 
+	function setCalendarOpen(open: bool): void {
+		if (open) {
+			notificationCenter.closePanel()
+			menus.close()
+			settingsPanel.close()
+			trayPopup.close()
+		}
+		calendarOpen = open
+	}
+
+	function openSettingsPage(page: int): void {
+		calendarOpen = false
+		trayPopup.close()
+		settingsPanel.openPage(page)
+	}
+
 	Process {
 		running: true
 		command: ["brightnessctl", "-m"]
@@ -77,15 +97,50 @@ ShellRoot {
 	}
 
 	GSFLoader {}
-	NotificationCenter { id: notificationCenter }
+	NotificationCenter {
+		id: notificationCenter
+		onPanelOpenChanged: {
+			if (panelOpen) {
+				root.calendarOpen = false
+				trayPopup.close()
+				settingsPanel.close()
+				menus.close()
+			}
+		}
+	}
+	FloralDock {}
+	FloralSettingsPanel {
+		id: settingsPanel
+		onCloseConflictsRequested: {
+			root.calendarOpen = false
+			trayPopup.close()
+			notificationCenter.closePanel()
+			menus.close()
+		}
+	}
 	CaelestiaMenus {
 		id: menus
 		onActiveChanged: {
-			if (active)
+			if (active) {
+				root.calendarOpen = false
+				trayPopup.close()
+				settingsPanel.close()
 				notificationCenter.closePanel()
+			}
 		}
 	}
 	WallpaperCarousel.Standalone {}
+
+	IpcHandler {
+		target: "calendar"
+
+		function toggle(): void {
+			root.setCalendarOpen(!root.calendarOpen)
+		}
+		function open(): void { root.setCalendarOpen(true) }
+		function close(): void { root.setCalendarOpen(false) }
+		function isOpen(): bool { return root.calendarOpen }
+	}
 
 	PanelWindow {
 	id: bar
@@ -131,6 +186,20 @@ ShellRoot {
 			height: volumePopup.revealHeight
 		}
 
+		Region {
+			x: calendarPopup.x
+			y: calendarPopup.y + calendarPopup.visualTop
+			width: calendarPopup.width
+			height: calendarPopup.revealHeight
+		}
+
+		Region {
+			x: trayPopup.x
+			y: trayPopup.y + trayPopup.visualTop
+			width: trayPopup.width
+			height: trayPopup.revealHeight
+		}
+
 	}
 
 	SystemClock {
@@ -140,6 +209,21 @@ ShellRoot {
 
 	PwObjectTracker {
 		objects: [root.audioSink]
+	}
+
+	Rectangle {
+		anchors {
+			left: barSurface.left
+			right: barSurface.right
+			top: barSurface.bottom
+		}
+		height: ShellConfig.scaled(10)
+		visible: FloralSettings.shadows
+		gradient: Gradient {
+			orientation: Gradient.Vertical
+			GradientStop { position: 0; color: Theme.shadowSoft }
+			GradientStop { position: 1; color: "transparent" }
+		}
 	}
 
 	Rectangle {
@@ -212,6 +296,8 @@ ShellRoot {
 	}
 
 	Item {
+		id: leftArea
+
 		anchors {
 			left: parent.left
 			right: notchSafeArea.left
@@ -220,7 +306,25 @@ ShellRoot {
 		}
 		clip: true
 
+		FloralOsd {
+			anchors {
+				right: parent.right
+				rightMargin: ShellConfig.bar.contentMargin
+				verticalCenter: parent.verticalCenter
+				verticalCenterOffset: -2
+			}
+			width: Math.min(implicitWidth,
+				parent.width - ShellConfig.scaled(24))
+			height: implicitHeight
+			volume: root.volume
+			muted: root.muted
+			brightness: root.brightnessPercentage / 100
+			z: 4
+		}
+
 		Row {
+			id: leftModules
+
 			anchors {
 				left: parent.left
 				leftMargin: ShellConfig.bar.contentMargin
@@ -231,37 +335,31 @@ ShellRoot {
 
 			FedoraLauncherButton {
 				anchors.verticalCenter: parent.verticalCenter
-				onClicked: notificationCenter.togglePanel()
-			}
-
-			Text {
-				anchors.verticalCenter: parent.verticalCenter
-				text: Qt.formatDateTime(clock.date, "HH:mm")
-				color: Theme.moduleValue
-				font {
-					family: ShellConfig.typography.monoFamily
-					pixelSize: ShellConfig.bar.valueFontSize
-					weight: Font.DemiBold
+				onClicked: {
+					root.calendarOpen = false
+					trayPopup.close()
+					settingsPanel.close()
+					menus.close()
+					notificationCenter.togglePanel()
 				}
 			}
 
-			ElegantSeparator {
+			ClockSummary {
+				id: clockSummary
+
 				anchors.verticalCenter: parent.verticalCenter
+				visible: !FloralSettings.dockEnabled
+				currentDate: clock.date
+				active: root.calendarOpen
+				onClicked: {
+					trayPopup.close()
+					root.setCalendarOpen(!root.calendarOpen)
+				}
 			}
 
-			Text {
+	      ElegantSeparator {
 				anchors.verticalCenter: parent.verticalCenter
-				width: ShellConfig.bar.dateValueWidth
-				text: Qt.formatDateTime(clock.date, "ddd, MMM d").toLowerCase()
-				color: Theme.moduleValue
-				font {
-					family: ShellConfig.typography.monoFamily
-					pixelSize: ShellConfig.bar.dateFontSize
-				}
-      }
-
-      ElegantSeparator {
-				anchors.verticalCenter: parent.verticalCenter
+				visible: !FloralSettings.dockEnabled
 			}
 
       Text {
@@ -281,12 +379,18 @@ ShellRoot {
 				anchors.verticalCenter: parent.verticalCenter
 			}
 
-      ElegantSeparator {
+		      ElegantSeparator {
+				anchors.verticalCenter: parent.verticalCenter
+		      }
+
+			BarStatusPills {
+				id: statusPills
 				anchors.verticalCenter: parent.verticalCenter
 			}
 
       Text {
 				anchors.verticalCenter: parent.verticalCenter
+				visible: !statusPills.hasActiveStatus
         text: "window:"
 				color: Theme.moduleLabel
 				font {
@@ -301,6 +405,7 @@ ShellRoot {
 				width: ShellConfig.bar.windowTitleWidth
 				maximumWidth: ShellConfig.bar.windowTitleWidth
 				anchors.verticalCenter: parent.verticalCenter
+				visible: !statusPills.hasActiveStatus
 			}
 		}
 	}
@@ -339,36 +444,57 @@ ShellRoot {
 			Local.NetworkSummary {
 				id: networkSummary
 				anchors.verticalCenter: parent.verticalCenter
+				onClicked: root.openSettingsPage(4)
 			}
 
-      ElegantSeparator {
+	      ElegantSeparator {
 				anchors.verticalCenter: parent.verticalCenter
-      }
+	      }
 
 			ControlSummary {
 				id: brightnessSummary
 				anchors.verticalCenter: parent.verticalCenter
 				label: "brt"
 				value: root.brightnessPercentage / 100
+				onClicked: root.openSettingsPage(7)
 			}
 
-      ElegantSeparator {
+	      ElegantSeparator {
 				anchors.verticalCenter: parent.verticalCenter
-      }
+	      }
 
 			ControlSummary {
 				id: volumeSummary
 				anchors.verticalCenter: parent.verticalCenter
 				label: "vol"
 				value: root.volume
+				onClicked: root.openSettingsPage(6)
 			}
 
-      ElegantSeparator {
+	      ElegantSeparator {
 				anchors.verticalCenter: parent.verticalCenter
-      }
+				visible: !FloralSettings.dockEnabled
+	      }
+
+			BarTraySummary {
+				id: traySummary
+				anchors.verticalCenter: parent.verticalCenter
+				onClicked: {
+					root.calendarOpen = false
+					trayPopup.togglePinned()
+				}
+			}
+
+			ElegantSeparator {
+				anchors.verticalCenter: parent.verticalCenter
+				visible: traySummary.visible
+			}
 
 			BatteryModule {
+				id: barBattery
 				anchors.verticalCenter: parent.verticalCenter
+				visible: !FloralSettings.dockEnabled
+				onClicked: root.openSettingsPage(7)
 			}
 
 			ElegantSeparator {
@@ -394,6 +520,38 @@ ShellRoot {
 				center - width / 2))
 		}
 		y: ShellConfig.bar.surfaceHeight - ShellConfig.bar.mediaPopupHoverBridge
+		z: ShellConfig.frame.borderZ + 1
+	}
+
+	CalendarPopup {
+		id: calendarPopup
+
+		open: root.calendarOpen
+		currentDate: clock.date
+		x: {
+			const center = leftModules.x + clockSummary.x
+				+ clockSummary.width / 2
+			return Math.max(0, Math.min(bar.width - width,
+				center - width / 2))
+		}
+		y: ShellConfig.bar.surfaceHeight
+			- ShellConfig.bar.mediaPopupHoverBridge
+		z: ShellConfig.frame.borderZ + 1
+		onCloseRequested: root.setCalendarOpen(false)
+	}
+
+	BarTray {
+		id: trayPopup
+
+		triggerHovered: traySummary.hovered
+		x: {
+			const center = rightArea.x + rightModules.x
+				+ traySummary.x + traySummary.width / 2
+			return Math.max(0, Math.min(bar.width - width,
+				center - width / 2))
+		}
+		y: ShellConfig.bar.surfaceHeight
+			- ShellConfig.bar.mediaPopupHoverBridge
 		z: ShellConfig.frame.borderZ + 1
 	}
 

@@ -5,15 +5,24 @@ Item {
 
 	required property string label
 	required property real value
+	signal clicked
 
-	readonly property bool hovered: summaryHover.hovered
+	readonly property bool hovered: summaryPointer.containsMouse
 
 	implicitWidth: ShellConfig.bar.controlSummaryWidth
 	implicitHeight: ShellConfig.bar.mediaButtonSize
+	scale: root.hovered ? 1.035 : 1
+
+	Behavior on scale {
+		NumberAnimation {
+			duration: ShellConfig.visuals.motionFast
+			easing.type: Easing.OutBack
+		}
+	}
 
 	Rectangle {
 		anchors.fill: parent
-		radius: 0
+		radius: ShellConfig.visuals.controlRadius
 		color: root.hovered ? Theme.panelRaised : "transparent"
 		border.width: root.hovered ? ShellConfig.bar.contentBorderWidth : 0
 		border.color: Theme.frameBorder
@@ -63,8 +72,13 @@ Item {
 			topMargin: -ShellConfig.bar.popupTriggerTopExtension
 		}
 
-		HoverHandler {
-			id: summaryHover
+		MouseArea {
+			id: summaryPointer
+
+			anchors.fill: parent
+			hoverEnabled: true
+			cursorShape: Qt.PointingHandCursor
+			onClicked: root.clicked()
 		}
 	}
 }

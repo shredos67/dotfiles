@@ -4,6 +4,7 @@ import qs.components
 
 Item {
 	id: root
+	signal clicked
 
 	readonly property var battery: UPower.displayDevice
 	readonly property int percentage: battery.ready
@@ -78,5 +79,15 @@ Item {
 		topRightRadius: Math.min(width / 2, height / 2)
 		bottomRightRadius: topRightRadius
 		color: root.chargeColour
+	}
+
+	MouseArea {
+		anchors {
+			fill: parent
+			topMargin: -ShellConfig.bar.popupTriggerTopExtension
+		}
+		hoverEnabled: true
+		cursorShape: Qt.PointingHandCursor
+		onClicked: root.clicked()
 	}
 }

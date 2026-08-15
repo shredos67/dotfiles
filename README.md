@@ -58,16 +58,24 @@ fedora is the actually tested distro, arch and debian package handling is there 
 
 the shell is qml and is basically the main character here
 
-- one top bar with four roman numeral workspaces, current window, network, media, brightness, volume, battery and time
+- one top bar with four roman numeral workspaces, current window, network, media, brightness and volume, battery and time live there too whenever the dock is off
 - rendered buttons and battery shapes, not a pile of font glyphs pretending to be ui
-- launcher on `super space`, copied from the useful part of caelestia and restyled into the same ui
+- launcher on `super space`, when the dock is enabled the dock grows into the launcher itself, turn the dock off and the normal floating launcher comes back
 - power menu on `super m`, with working lock logout suspend reboot and shutdown actions
-- notification drawer from the fedora corner button, notifications slide away left when dismissed and the drawer has screenshots recordings shortcuts and system usage
-- media popup with art progress and animated rendered controls
+- notification drawer from the fedora corner button, notifications slide away left when dismissed and the drawer has screenshots recordings shortcuts system usage clipped floral corners and enough engraved detail to not feel like a dead rectangle
+- bottom taskbar with pinned and running apps on the left, tray and the rendered battery on the right, window indicators hover magnification and proper workspace reservation, auto hide releases the space and keeps a stable bottom edge trigger
+- enabling the dock moves date and time plus the battery into it, brightness and volume stay in the top bar where their useful hover controls already are
+- every app in the launcher has a rendered pin button, pinning or unpinning updates the dock without closing the launcher
+- settings app on `super comma`, appearance dock and motion changes are saved live, it also has real wi fi bluetooth pipewire brightness power and session controls instead of being a fake settings shaped decoration
+- media popup with art seekable progress rendered controls and a real cava equalizer that reacts to whatever is playing
 - matching smaller popups for network brightness and volume
-- wallpaper picker on `super w`, full width cards and smooth selection movement
+- click the clock for a compact real calendar with month controls, volume and brightness changes get a tiny bar osd that stays outside the macbook notch
+- network brightness volume and battery readouts are actual shortcuts now, clicking one opens the matching settings page while hover keeps the small control popup
+- when the dock is off the system tray falls back into the top bar, active recording muted mic and dnd replace the window title until u deal with them
+- wallpaper picker on `super w`, full width masked cards smooth cubic movement current wallpaper state metadata floral framing and no cards escaping through the top or bottom anymore
 - one shared engraved popup chrome so the outer and faint inner borders actually continue from the bar
 - floral png corner masks on the launcher power menu notification drawer and wallpaper picker
+- shared shadows engraved inner lines accent glow and cubic motion so the floating pieces look like one setup instead of six unrelated panels
 - most useful dimensions live in `~/.config/quickshell/ShellConfig.qml` so u dont have to hunt through every component again
 - live colors come from `~/.config/quickshell/Theme.qml`
 
@@ -76,8 +84,11 @@ the main ipc calls are
 ```sh
 qs ipc call launcher toggle
 qs ipc call powerMenu toggle
-qs ipc call notificationCenter toggle
+qs ipc call notificationPanel toggle
 qs ipc call wallpaperCarousel toggle
+qs ipc call settings toggle
+qs ipc call settings openPage 4
+qs ipc call calendar toggle
 ```
 
 logs when qml decides one comma ruined its entire life
@@ -120,7 +131,9 @@ export AWWW_COLOR_SETTLE_DELAY=0.0
 
 ### hyprland
 
-hyprland is written through hyprland lua instead of the normal huge conf, the config includes the 1.33 display scale, dwindle layout, touchpad gestures, window rules, session startup, plugins and all binds
+hyprland is written through lua instead of one enormous conf, `hyprland.lua` is only the entrypoint now and loads small modules for environment appearance animations layouts input bindings and rules
+
+the live environment has rounded layered window frames, pywal gradient borders, cubic window and workspace motion and persistent workspaces one through four, compositor blur glow dimming and window shadows stay off because the floral image borders already do the visual work without cutting the frame rate in half
 
 the extra window styling uses
 
@@ -137,6 +150,8 @@ useful binds
 | `super space` | launcher |
 | `super m` | power menu |
 | `super w` | wallpapers |
+| `super n` | notifications |
+| `super comma` | shell settings |
 | `super l` | hyprlock |
 | `super t` | foot |
 | `super e` | nautilus |
@@ -215,7 +230,8 @@ the shell still loads if they are missing, it just uses its fallback or leaves t
 
 - `home/.config/quickshell/ShellConfig.qml` is sizes timings hitboxes rounding and layout
 - `home/.config/quickshell/Theme.qml` is the semantic color map, wal rewrites the actual values
-- `home/.config/hypr/hyprland.lua` is monitors inputs binds rules plugins and animations
+- `home/.config/hypr/hyprland.lua` is the tiny module entrypoint
+- `home/.config/hypr/modules` is environment appearance animations layouts input bindings and rules split into files that are actually editable
 - `home/.config/hypr/hyprlock.conf` is the currently generated lock theme
 - `home/.config/wal/templates` is what future wallpaper themes render from
 - `home/wallpaperCarousel` is wallpaper order transitions and the whole cross app sync job

@@ -40,7 +40,7 @@ StyledListView {
         onValuesChanged: root.currentIndex = 0
     }
 
-    spacing: ShellConfig.bar.hairlineThickness * 5
+    spacing: ShellConfig.scaled(6)
     orientation: Qt.Vertical
     readonly property real headerHeight: 0
     implicitHeight: Math.max(0, (ShellConfig.bar.launcherItemHeight + spacing)
@@ -52,18 +52,47 @@ StyledListView {
 
     highlightFollowsCurrentItem: false
     highlight: StyledRect {
-        radius: 0
-        color: Theme.panelHighlight
-        opacity: 0.82
+        radius: ShellConfig.bar.launcherItemRadius
+        color: Theme.accentWashStrong
+        opacity: 1
         border.width: ShellConfig.bar.buttonBorderWidth
-        border.color: Theme.frameBorderSoft
+        border.color: Theme.frameBorder
 
         y: root.currentItem?.y ?? 0
         implicitWidth: root.width
         implicitHeight: root.currentItem?.implicitHeight ?? 0
 
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: ShellConfig.scaled(4)
+            radius: Math.max(0, parent.radius - ShellConfig.scaled(4))
+            color: "transparent"
+            border.width: ShellConfig.bar.hairlineThickness
+            border.color: Theme.frameBorderFaint
+        }
+
+        Rectangle {
+            anchors {
+                left: parent.left
+                verticalCenter: parent.verticalCenter
+                leftMargin: ShellConfig.scaled(4)
+            }
+            width: ShellConfig.frame.lineThickness
+            height: parent.height * 0.42
+            radius: width / 2
+            color: Theme.moduleLabel
+        }
+
         Behavior on y {
-            Anim {}
+            Anim {
+                type: Anim.EmphasizedSmall
+            }
+        }
+
+        Behavior on implicitHeight {
+            Anim {
+                type: Anim.FastSpatial
+            }
         }
     }
 

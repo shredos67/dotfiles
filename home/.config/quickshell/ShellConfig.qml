@@ -19,11 +19,34 @@ QtObject {
         property string iconFamily: "Symbols Nerd Font Mono"
     }
 
+    property QtObject visuals: QtObject {
+        // shared depth and rounding
+        property int surfaceRadius: root.scaled(16)
+        property int cardRadius: root.scaled(12)
+        property int controlRadius: root.scaled(9)
+        property int innerInset: root.scaled(6)
+        property int innerLineWidth: 1
+        property int shadowBleed: root.scaled(28)
+        property real shadowBlur: root.scaled(14)
+        property real shadowSpread: root.scaled(1)
+        property real shadowOffsetY: root.scaled(4)
+        property real shadowOpacity: 0.68
+        property real ambientGlowOpacity: 0.18
+
+        // shared motion
+        property int motionFast: 130
+        property int motionNormal: 230
+        property int motionSlow: 380
+        property real hoverLift: root.scaled(3)
+        property real pressedScale: 0.94
+    }
+
     property QtObject bar: QtObject {
         // top bar size and layout
         property int surfaceHeight: 50
         property int windowHeight: 145
         property int popupHostHeight: 220 + mediaPopupBounceBridge
+            + root.visuals.shadowBleed
         property int exclusiveZone: 50
         property int notchWidth: root.scaled(240) // this is for m2 macbooks
         property int contentMargin: root.scaled(14)
@@ -50,9 +73,24 @@ QtObject {
         property int workspaceSpacing: root.scaled(3)
         property int workspaceFontSize: root.scaled(14)
         property int workspaceAnimationMs: 120
+        property int clockTimeValueWidth: root.scaled(48)
+        property int clockSummaryPadding: root.scaled(5)
         property int dateValueWidth: root.scaled(94)
         property int windowTitleWidth: root.scaled(210)
         property int networkMaximumWidth: root.scaled(120)
+
+        // calendar popup
+        property int calendarPopupWidth: 344
+        property int calendarPopupHeight: 198
+        property int calendarPopupPadding: 12
+        property int calendarHeaderHeight: 27
+        property int calendarNavButtonSize: 24
+        property int calendarWeekdayHeight: 16
+        property int calendarDayCellHeight: 19
+        property int calendarMonthTitleSize: 14
+        property int calendarWeekdaySize: 10
+        property int calendarDaySize: 12
+        property int calendarAnimationMs: root.visuals.motionNormal
 
         // network popup
         property int networkPopupWidth: 310
@@ -96,7 +134,7 @@ QtObject {
         property int mediaPopupProgressUpdateMs: 500
 
         // popup and image corners
-        property int popupCornerRadius: 12
+        property int popupCornerRadius: root.visuals.surfaceRadius
         property int popupInnerInset: engravedInset
         property int mediaArtworkCornerRadius: 9
         property int powerImageCornerRadius: root.scaled(12)

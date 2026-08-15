@@ -20,15 +20,28 @@ Item {
 
 	Rectangle {
 		anchors.fill: parent
-		radius: 0
+		radius: ShellConfig.visuals.controlRadius
 		color: pointer.pressed
 			? Theme.panelHighlight
 			: pointer.containsMouse ? Theme.panelRaised : "transparent"
 		border.width: pointer.containsMouse ? ShellConfig.bar.contentBorderWidth : 0
 		border.color: Theme.frameBorder
+		scale: pointer.containsMouse ? 1 : 0.84
+		opacity: pointer.containsMouse || pointer.pressed ? 1 : 0
 
 		Behavior on color {
 			ColorAnimation { duration: ShellConfig.bar.menuAnimationMs }
+		}
+
+		Behavior on scale {
+			NumberAnimation {
+				duration: ShellConfig.visuals.motionFast
+				easing.type: Easing.OutBack
+			}
+		}
+
+		Behavior on opacity {
+			NumberAnimation { duration: ShellConfig.visuals.motionFast }
 		}
 	}
 

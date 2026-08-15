@@ -35,12 +35,16 @@ Item {
     anchors.bottomMargin: (-implicitHeight - 5) * offsetScale
     implicitHeight: content.implicitHeight
     implicitWidth: content.implicitWidth || 630 // Hard coded fallback for first open
-    opacity: 1 - offsetScale
+    opacity: 1 - offsetScale * 0.82
+    scale: 1 - offsetScale * 0.025
+    transformOrigin: Item.Bottom
 
     Component.onCompleted: Qt.callLater(() => Apps) // Load apps on init
 
     Behavior on offsetScale {
-        Anim {}
+        Anim {
+            type: Anim.Emphasized
+        }
     }
 
     Loader {

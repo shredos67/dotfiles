@@ -20,10 +20,14 @@ Item {
     anchors.rightMargin: (-implicitWidth - 5 - sidebarOffset) * offsetScale
     implicitWidth: content.implicitWidth
     implicitHeight: content.implicitHeight || 510 * ShellConfig.uiScale // Hard coded fallback for first open
-    opacity: 1 - offsetScale
+    opacity: 1 - offsetScale * 0.82
+    scale: 1 - offsetScale * 0.018
+    transformOrigin: Item.Right
 
     Behavior on offsetScale {
-        Anim {}
+        Anim {
+            type: Anim.Emphasized
+        }
     }
 
     Loader {

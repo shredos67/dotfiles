@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import QtQuick.Shapes
 import qs.components
 
@@ -7,13 +8,30 @@ Item {
 
 	readonly property real edge: ShellConfig.frame.lineThickness
 	readonly property real inset: ShellConfig.bar.popupInnerInset
-	readonly property real cornerRadius: 0
+	readonly property real cornerRadius: ShellConfig.bar.popupCornerRadius
 	readonly property real faintRadius: Math.max(0, cornerRadius - inset / 2)
 	readonly property real faintLeft: inset
 	readonly property real faintRight: width - inset
 	readonly property real faintBottom: height - inset
 
+	RectangularShadow {
+		anchors.fill: outerFrame
+		visible: FloralSettings.shadows
+		radius: 0
+		topLeftRadius: 0
+		topRightRadius: 0
+		bottomLeftRadius: root.cornerRadius + root.edge
+		bottomRightRadius: bottomLeftRadius
+		blur: ShellConfig.visuals.shadowBlur
+		spread: ShellConfig.visuals.shadowSpread
+		offset: Qt.vector2d(0, ShellConfig.visuals.shadowOffsetY)
+		color: Theme.shadowColor
+		cached: true
+	}
+
 	StyledRect {
+		id: outerFrame
+
 		anchors.fill: parent
 		radius: 0
 		bottomLeftRadius: root.cornerRadius + root.edge

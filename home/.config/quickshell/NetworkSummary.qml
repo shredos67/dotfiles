@@ -3,6 +3,7 @@ import Quickshell.Networking
 
 Item {
 	id: root
+	signal clicked
 
 	readonly property var connectedDevice: Networking.devices.values.find(
 		device => device.connected
@@ -17,10 +18,31 @@ Item {
 			? (activeNetwork ? activeNetwork.name : "Wi-Fi")
 			: "Wired"
 		: "Offline"
-	readonly property bool hovered: hoverHandler.hovered
+	readonly property bool hovered: summaryPointer.containsMouse
 
 	implicitWidth: summaryRow.implicitWidth
 	implicitHeight: ShellConfig.bar.mediaButtonSize
+	scale: root.hovered ? 1.025 : 1
+
+	Behavior on scale {
+		NumberAnimation {
+			duration: ShellConfig.visuals.motionFast
+			easing.type: Easing.OutBack
+		}
+	}
+
+	Rectangle {
+		anchors.fill: parent
+		anchors.margins: -ShellConfig.bar.mediaSummaryPadding
+		radius: ShellConfig.visuals.controlRadius
+		color: root.hovered ? Theme.panelRaised : "transparent"
+		border.width: root.hovered ? ShellConfig.bar.hairlineThickness : 0
+		border.color: Theme.frameBorderSoft
+
+		Behavior on color {
+			ColorAnimation { duration: ShellConfig.visuals.motionFast }
+		}
+	}
 
 	Row {
 		id: summaryRow
@@ -59,8 +81,13 @@ Item {
 			topMargin: -ShellConfig.bar.popupTriggerTopExtension
 		}
 
-		HoverHandler {
-			id: hoverHandler
+		MouseArea {
+			id: summaryPointer
+
+			anchors.fill: parent
+			hoverEnabled: true
+			cursorShape: Qt.PointingHandCursor
+			onClicked: root.clicked()
 		}
 	}
 }

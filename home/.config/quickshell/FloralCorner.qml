@@ -4,6 +4,7 @@ import Quickshell
 
 Item {
 	id: root
+	visible: FloralSettings.ornaments
 
 	enum Location {
 		TopLeft,

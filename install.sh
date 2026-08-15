@@ -155,14 +155,14 @@ install_system_packages() {
         root_run dnf copr enable -y lionheartp/Hyprland || \
             warn "the hyprland copr could not be enabled"
         root_run dnf install -y --skip-unavailable \
-            hyprland hyprlock quickshell awww foot fastfetch neovim \
+            hyprland hyprlock quickshell awww foot fastfetch neovim cava bluez NetworkManager \
             grim slurp imv brightnessctl playerctl jq ImageMagick \
             nautilus nwg-look qt5ct qt6ct obs-studio \
             python3-pip rsync curl git tar unzip util-linux libnotify || \
             warn "some fedora packages could not be installed"
     elif command -v pacman >/dev/null 2>&1; then
         root_run pacman -S --needed --noconfirm \
-            hyprland hyprlock quickshell awww foot fastfetch neovim \
+            hyprland hyprlock quickshell awww foot fastfetch neovim cava bluez bluez-utils networkmanager \
             grim slurp imv brightnessctl playerctl jq imagemagick \
             nautilus nwg-look qt5ct qt6ct obs-studio \
             python-pip rsync curl git tar unzip util-linux libnotify || \
@@ -170,7 +170,7 @@ install_system_packages() {
     elif command -v apt-get >/dev/null 2>&1; then
         root_run apt-get update || warn "apt metadata could not be refreshed"
         root_run apt-get install -y \
-            foot fastfetch neovim grim slurp imv brightnessctl playerctl \
+            foot fastfetch neovim cava bluez network-manager grim slurp imv brightnessctl playerctl \
             jq imagemagick nautilus qt5ct qt6ct obs-studio \
             python3-pip rsync curl git tar unzip util-linux libnotify-bin || \
             warn "some debian packages could not be installed"
@@ -263,6 +263,7 @@ install_one() {
     target_path="$HOME/$relative"
     backup_path="$backup_root/$relative"
     preserved_session_image=
+    preserved_shell_settings=
 
     [ -e "$source_path" ] || [ -L "$source_path" ] || return 0
 
@@ -270,6 +271,12 @@ install_one() {
        [ -f "$target_path/session_img.png" ]; then
         preserved_session_image="$work_root/session_img.png"
         run cp -a "$target_path/session_img.png" "$preserved_session_image"
+    fi
+
+    if [ "$relative" = .config/quickshell ] && \
+       [ -f "$target_path/floral-settings.json" ]; then
+        preserved_shell_settings="$work_root/floral-settings.json"
+        run cp -a "$target_path/floral-settings.json" "$preserved_shell_settings"
     fi
 
     if [ -e "$target_path" ] || [ -L "$target_path" ]; then
@@ -282,6 +289,10 @@ install_one() {
 
     if [ -n "$preserved_session_image" ]; then
         run cp -a "$preserved_session_image" "$target_path/session_img.png"
+    fi
+
+    if [ -n "$preserved_shell_settings" ]; then
+        run cp -a "$preserved_shell_settings" "$target_path/floral-settings.json"
     fi
 }
 
@@ -304,6 +315,7 @@ managed_paths='
 .config/obs-studio/basic/profiles/Untitled
 .config/obs-studio/basic/scenes/Untitled.json
 .local/share/icons/Pywal
+.local/share/applications/floral-shell-settings.desktop
 .local/bin/dstl-launcher
 .local/bin/quickshell-obs-record
 .local/bin/quickshell-screenshot

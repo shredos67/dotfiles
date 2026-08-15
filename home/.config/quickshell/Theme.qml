@@ -76,6 +76,20 @@ Singleton {
 		frameBorder.g, frameBorder.b, 0.22)
 	readonly property color panelSheen: Qt.rgba(moduleValue.r,
 		moduleValue.g, moduleValue.b, 0.035)
+	readonly property color panelVeil: Qt.rgba(panelRaised.r,
+		panelRaised.g, panelRaised.b, 0.88)
+	readonly property color panelQuiet: Qt.rgba(panelHighlight.r,
+		panelHighlight.g, panelHighlight.b, 0.42)
+	readonly property color frameGlow: Qt.rgba(frameBorder.r,
+		frameBorder.g, frameBorder.b, 0.16)
+	readonly property color accentWash: Qt.rgba(accentPrimary.r,
+		accentPrimary.g, accentPrimary.b, 0.12)
+	readonly property color accentWashStrong: Qt.rgba(accentPrimary.r,
+		accentPrimary.g, accentPrimary.b, 0.22)
+	readonly property color shadowColor: Qt.rgba(term0.r,
+		term0.g, term0.b, 0.82)
+	readonly property color shadowSoft: Qt.rgba(term0.r,
+		term0.g, term0.b, 0.48)
 
 	readonly property color accentPrimary: colours.accents.primary
 	readonly property color accentSecondary: colours.accents.secondary

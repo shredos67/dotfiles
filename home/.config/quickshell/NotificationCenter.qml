@@ -7,6 +7,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Effects
 import QtQuick.Shapes
 import Qt.labs.folderlistmodel
 import Quickshell
@@ -176,7 +177,7 @@ Scope {
 
     Timer {
         interval: ShellConfig.notifications.statsUpdateMs
-        running: true
+        running: root.panelOpen
         repeat: true
         triggeredOnStart: true
         onTriggered: {
@@ -235,6 +236,8 @@ Scope {
 
     PanelWindow {
         id: panelWindow
+
+        visible: root.panelOpen || root.panelOffsetScale < 1
 
         anchors {
             top: true
@@ -303,13 +306,88 @@ Scope {
             Rectangle {
                 anchors {
                     left: parent.left
-                    right: parent.right
                     top: parent.top
                     bottom: parent.bottom
                     leftMargin: -ShellConfig.notifications.animationBleed
                 }
+                width: ShellConfig.notifications.animationBleed
                 color: Theme.panel
                 z: -1
+            }
+
+            Rectangle {
+                x: parent.width - ShellConfig.notifications.borderWidth
+                width: ShellConfig.visuals.shadowBleed
+                height: parent.height
+                z: -2
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop {
+                        position: 0
+                        color: Theme.shadowColor
+                    }
+                    GradientStop {
+                        position: 1
+                        color: Qt.alpha(Theme.shadowColor, 0)
+                    }
+                }
+                opacity: FloralSettings.shadows ? 0.72 : 0
+            }
+
+            StyledClippingRect {
+                anchors.fill: parent
+                radius: 0
+                topLeftRadius: drawer.configuredTopLeftRadius
+                topRightRadius: 0
+                bottomLeftRadius: 0
+                bottomRightRadius: 0
+                color: Theme.panel
+                contentUnderBorder: true
+                z: -1
+
+                Rectangle {
+                    anchors.fill: parent
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop {
+                            position: 0
+                            color: Theme.panel
+                        }
+                        GradientStop {
+                            position: 0.72
+                            color: Theme.panel
+                        }
+                        GradientStop {
+                            position: 1
+                            color: Theme.panelQuiet
+                        }
+                    }
+                    opacity: 0.76
+                }
+
+                FloralCorner {
+                    anchors {
+                        top: parent.top
+                        right: parent.right
+                        margins: ShellConfig.frame.lineThickness
+                    }
+                    width: ShellConfig.notifications.notificationOrnamentSize
+                    height: width
+                    location: FloralCorner.TopRight
+                    strength: 0.82
+                }
+
+                FloralCorner {
+                    anchors {
+                        bottom: parent.bottom
+                        right: parent.right
+                        margins: ShellConfig.frame.lineThickness
+                    }
+                    width: ShellConfig.notifications.notificationOrnamentSize
+                    height: width
+                    location: FloralCorner.BottomRight
+                    strength: 0.82
+                }
             }
 
             Rectangle {
@@ -458,32 +536,6 @@ Scope {
                 }
             }
 
-            FloralCorner {
-                anchors {
-                    top: parent.top
-                    right: parent.right
-                    margins: ShellConfig.frame.lineThickness
-                }
-                width: ShellConfig.notifications.notificationOrnamentSize
-                height: width
-                location: FloralCorner.TopRight
-                strength: 0.62
-                z: ShellConfig.frame.borderZ - 2
-            }
-
-            FloralCorner {
-                anchors {
-                    bottom: parent.bottom
-                    right: parent.right
-                    margins: ShellConfig.frame.lineThickness
-                }
-                width: ShellConfig.notifications.notificationOrnamentSize
-                height: width
-                location: FloralCorner.BottomRight
-                strength: 0.62
-                z: ShellConfig.frame.borderZ - 2
-            }
-
             Item {
                 id: header
 
@@ -507,8 +559,8 @@ Scope {
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: "idk what to call this"
-                        color: Theme.moduleLabel
+                        text: "notifications"
+                        color: Theme.moduleValue
                         renderType: Text.NativeRendering
                         font {
                             family: ShellConfig.typography.monoFamily
@@ -523,7 +575,7 @@ Scope {
                         text: Notifs.notClosed.length === 1
                             ? "1 notification"
                             : `${Notifs.notClosed.length} notifications`
-                        color: Theme.textMuted
+                        color: Theme.moduleLabel
                         renderType: Text.NativeRendering
                         font {
                             family: ShellConfig.typography.monoFamily
@@ -572,7 +624,7 @@ Scope {
 
                     Rectangle {
                         anchors.centerIn: parent
-                        width: parent.width
+                        width: parent.width - ShellConfig.notifications.cardPadding * 2
                         height: ShellConfig.notifications.borderWidth
                         color: Theme.frameBorderSoft
                     }
@@ -585,6 +637,30 @@ Scope {
                         color: Theme.panel
                         border.width: ShellConfig.notifications.borderWidth
                         border.color: Theme.frameBorderSoft
+                    }
+
+                    Rectangle {
+                        anchors {
+                            left: parent.left
+                            leftMargin: ShellConfig.notifications.cardPadding * 0.45
+                            verticalCenter: parent.verticalCenter
+                        }
+                        width: ShellConfig.bar.separatorDiamondSize / 2
+                        height: width
+                        radius: width / 2
+                        color: Theme.moduleLabel
+                    }
+
+                    Rectangle {
+                        anchors {
+                            right: parent.right
+                            rightMargin: ShellConfig.notifications.cardPadding * 0.45
+                            verticalCenter: parent.verticalCenter
+                        }
+                        width: ShellConfig.bar.separatorDiamondSize / 2
+                        height: width
+                        radius: width / 2
+                        color: Theme.moduleLabel
                     }
                 }
             }
@@ -657,7 +733,7 @@ Scope {
                 }
             }
 
-            Rectangle {
+            StyledClippingRect {
                 id: recentShots
 
                 anchors {
@@ -669,15 +745,47 @@ Scope {
                     bottomMargin: ShellConfig.notifications.cardSpacing
                 }
                 height: ShellConfig.notifications.screenshotAreaHeight
-                radius: 0
+                radius: ShellConfig.notifications.cardRadius
                 color: Theme.panelRaised
                 border.width: ShellConfig.notifications.borderWidth
                 border.color: Theme.frameBorderSoft
+                contentUnderBorder: true
+                layer.enabled: FloralSettings.shadows
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Theme.shadowColor
+                    shadowOpacity: 0.38
+                    shadowBlur: 0.72
+                    shadowVerticalOffset: ShellConfig.scaled(2)
+                    blurMax: ShellConfig.scaled(14)
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0; color: Theme.panelRaised }
+                        GradientStop { position: 1; color: Theme.panelQuiet }
+                    }
+                    opacity: 0.64
+                }
+
+                FloralCorner {
+                    anchors {
+                        right: parent.right
+                        bottom: parent.bottom
+                    }
+                    width: parent.height * 0.7
+                    height: width
+                    location: FloralCorner.BottomRight
+                    strength: 0.16
+                }
 
                 Rectangle {
                     anchors.fill: parent
                     anchors.margins: ShellConfig.notifications.panelInnerInset - 2
-                    radius: 0
+                    radius: Math.max(0, recentShots.radius
+                        - ShellConfig.notifications.panelInnerInset + 2)
                     color: "transparent"
                     border.width: ShellConfig.notifications.borderWidth
                     border.color: Theme.frameBorderFaint
@@ -744,7 +852,7 @@ Scope {
                         }
                         width: recentHeader.height + 8
                         height: recentHeader.height + 5
-                        radius: 0
+                        radius: ShellConfig.visuals.controlRadius
                         color: captureTogglePointer.containsMouse
                             ? Theme.panelHighlight : Theme.panel
                         border.width: ShellConfig.bar.buttonBorderWidth
@@ -756,7 +864,7 @@ Scope {
                         Behavior on scale {
                             NumberAnimation {
                                 duration: ShellConfig.bar.menuAnimationMs
-                                easing.type: Easing.OutBack
+                                easing.type: Easing.OutCubic
                             }
                         }
 
@@ -799,7 +907,7 @@ Scope {
                     boundsBehavior: Flickable.StopAtBounds
                     flickDeceleration: 4500
                     maximumFlickVelocity: 1800
-                    cacheBuffer: height
+                    cacheBuffer: Math.max(0, height)
 
                     delegate: Rectangle {
                         id: shotRow
@@ -810,12 +918,38 @@ Scope {
 
                         width: ListView.view.width
                         height: ShellConfig.notifications.screenshotRowHeight
-                        radius: 0
+                        radius: ShellConfig.visuals.controlRadius * 0.7
                         color: shotPointer.containsMouse
                             ? Theme.panelHighlight : "transparent"
                         border.width: shotPointer.containsMouse
                             ? ShellConfig.bar.buttonBorderWidth : 0
                         border.color: Theme.frameBorderFaint
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: ShellConfig.visuals.motionFast
+                            }
+                        }
+
+                        Rectangle {
+                            anchors {
+                                left: parent.left
+                                top: parent.top
+                                bottom: parent.bottom
+                                margins: ShellConfig.scaled(4)
+                            }
+                            width: ShellConfig.bar.hairlineThickness
+                            radius: width / 2
+                            color: Theme.moduleLabel
+                            opacity: shotPointer.containsMouse ? 1 : 0
+
+                            Behavior on opacity {
+                                NumberAnimation {
+                                    duration: ShellConfig.visuals.motionFast
+                                    easing.type: Easing.OutCubic
+                                }
+                            }
+                        }
 
                         MaterialIcon {
                             anchors {
@@ -883,7 +1017,7 @@ Scope {
                     height: Math.max(16, screenshotList.height
                         * screenshotList.visibleArea.heightRatio)
                     visible: screenshotList.contentHeight > screenshotList.height
-                    radius: 0
+                    radius: width / 2
                     color: Theme.frameBorder
                     opacity: screenshotList.moving ? 1 : 0.62
 
@@ -949,7 +1083,7 @@ Scope {
                     }
                 }
 
-                Rectangle {
+                StyledClippingRect {
                     id: statsFrame
 
                     anchors {
@@ -959,15 +1093,47 @@ Scope {
                         bottom: parent.bottom
                         topMargin: ShellConfig.notifications.cardSpacing + 8
                     }
-                    radius: 0
+                    radius: ShellConfig.notifications.cardRadius
                     color: Theme.panelRaised
                     border.width: ShellConfig.notifications.borderWidth
                     border.color: Theme.frameBorderSoft
+                    contentUnderBorder: true
+                    layer.enabled: FloralSettings.shadows
+                    layer.effect: MultiEffect {
+                        shadowEnabled: true
+                        shadowColor: Theme.shadowColor
+                        shadowOpacity: 0.42
+                        shadowBlur: 0.74
+                        shadowVerticalOffset: ShellConfig.scaled(2)
+                        blurMax: ShellConfig.scaled(14)
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0; color: Theme.panelRaised }
+                            GradientStop { position: 1; color: Theme.panelQuiet }
+                        }
+                        opacity: 0.6
+                    }
+
+                    FloralCorner {
+                        anchors {
+                            right: parent.right
+                            bottom: parent.bottom
+                        }
+                        width: parent.height * 0.58
+                        height: width
+                        location: FloralCorner.BottomRight
+                        strength: 0.14
+                    }
 
                     Rectangle {
                         anchors.fill: parent
                         anchors.margins: ShellConfig.notifications.panelInnerInset - 2
-                        radius: 0
+                        radius: Math.max(0, statsFrame.radius
+                            - ShellConfig.notifications.panelInnerInset + 2)
                         color: "transparent"
                         border.width: ShellConfig.notifications.borderWidth
                         border.color: Theme.frameBorderFaint
@@ -1241,7 +1407,7 @@ Scope {
             height: toastHost.listHeight
             visible: !root.panelOpen
             spacing: ShellConfig.notifications.cardSpacing
-            clip: true
+            clip: false
             interactive: contentHeight > height
             boundsBehavior: Flickable.StopAtBounds
 
@@ -1291,7 +1457,7 @@ Scope {
 
         width: root.actionWidth
         height: ShellConfig.notifications.actionHeight
-        radius: 0
+        radius: ShellConfig.visuals.controlRadius
         color: active
             ? Theme.panelHighlight
             : actionPointer.containsMouse ? Theme.panelHighlight : Theme.panelRaised
@@ -1301,13 +1467,33 @@ Scope {
             ? Theme.frameBorder
             : Theme.frameBorderSoft
         scale: actionPointer.pressed ? 0.93
-            : actionPointer.containsMouse ? 1.035 : 1
+            : actionPointer.containsMouse ? 1.015 : 1
+        layer.enabled: FloralSettings.shadows && action.enabled
+            && actionPointer.containsMouse
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: Theme.shadowSoft
+            shadowOpacity: actionPointer.containsMouse ? 0.58 : 0.26
+            shadowBlur: 0.66
+            shadowVerticalOffset: ShellConfig.scaled(2)
+            blurMax: ShellConfig.scaled(10)
+        }
 
         Behavior on scale {
             NumberAnimation {
                 duration: ShellConfig.bar.menuAnimationMs
-                easing.type: Easing.OutBack
+                easing.type: Easing.OutCubic
             }
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: ShellConfig.scaled(4)
+            radius: Math.max(0, action.radius - ShellConfig.scaled(4))
+            color: "transparent"
+            border.width: ShellConfig.bar.hairlineThickness
+            border.color: action.active || actionPointer.containsMouse
+                ? Theme.frameBorderSoft : Theme.frameBorderFaint
         }
 
         Row {
@@ -1358,7 +1544,7 @@ Scope {
 
         width: parent?.width ?? 0
         height: ShellConfig.notifications.statRowHeight
-        radius: 0
+        radius: ShellConfig.visuals.controlRadius
         color: Theme.panel
         border.width: ShellConfig.notifications.borderWidth
         border.color: Theme.frameBorderFaint
@@ -1421,7 +1607,7 @@ Scope {
                 bottomMargin: 7
             }
             height: ShellConfig.notifications.statBarHeight
-            radius: 0
+            radius: ShellConfig.visuals.controlRadius * 0.45
             color: Theme.panelHighlight
             border.width: 1
             border.color: Theme.frameBorderFaint
@@ -1434,7 +1620,7 @@ Scope {
                     margins: 1
                 }
                 width: Math.max(0, (parent.width - 2) * statRow.safeValue)
-                radius: 0
+                radius: Math.min(parent.radius, width / 2)
                 color: statRow.accent
 
                 Behavior on width {

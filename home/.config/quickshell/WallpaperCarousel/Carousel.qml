@@ -5,11 +5,13 @@
  */
 
 import QtQuick
+import QtQuick.Effects
 import Qt.labs.folderlistmodel
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import qs
+import qs.components
 
 Item {
     id: root
@@ -39,6 +41,8 @@ Item {
 
     readonly property var _currentView: _isInfinite ? pathView : listView
     readonly property string wallpaperFolderUrl: "file://" + wallpaperFolder
+    readonly property string currentWallpaperFile:
+        (currentWallpaperPath || "").split('/').pop()
 
     property var _folderCache: ({})
     property bool _initialSyncDone: false
@@ -221,10 +225,19 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            color: Theme.panel
+            gradient: Gradient {
+                GradientStop { position: 0; color: Theme.panel }
+                GradientStop { position: 0.55; color: Theme.panelRaised }
+                GradientStop { position: 1; color: Theme.panel }
+            }
             opacity: overlay.visible
                 ? Math.min(0.88, carousel.overlayOpacity / 100) : 0
-            Behavior on opacity { NumberAnimation { duration: 150 } }
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: ShellConfig.visuals.motionNormal
+                    easing.type: Easing.InOutCubic
+                }
+            }
         }
 
         MouseArea {
@@ -232,6 +245,48 @@ Item {
             enabled: overlay.visible && carousel.confirmingIndex < 0
             onClicked: root.close()
             z: 0
+        }
+
+        Rectangle {
+            anchors {
+                left: parent.left
+                right: parent.right
+            }
+            y: wallpaperPanel.y - height
+            height: ShellConfig.scaled(26)
+            z: 0.5
+            gradient: Gradient {
+                GradientStop {
+                    position: 0
+                    color: Qt.alpha(Theme.shadowColor, 0)
+                }
+                GradientStop {
+                    position: 1
+                    color: Theme.shadowColor
+                }
+            }
+            opacity: FloralSettings.shadows ? 0.8 : 0
+        }
+
+        Rectangle {
+            anchors {
+                left: parent.left
+                right: parent.right
+            }
+            y: wallpaperPanel.y + wallpaperPanel.height
+            height: ShellConfig.scaled(26)
+            z: 0.5
+            gradient: Gradient {
+                GradientStop {
+                    position: 0
+                    color: Theme.shadowColor
+                }
+                GradientStop {
+                    position: 1
+                    color: Qt.alpha(Theme.shadowColor, 0)
+                }
+            }
+            opacity: FloralSettings.shadows ? 0.8 : 0
         }
 
         Rectangle {
@@ -244,7 +299,12 @@ Item {
             }
             height: Math.min(parent.height - ShellConfig.bar.surfaceHeight - 40,
                 ShellConfig.wallpaperPicker.panelHeight)
-            color: Theme.panel
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0; color: Theme.panel }
+                GradientStop { position: 0.5; color: Theme.panelRaised }
+                GradientStop { position: 1; color: Theme.panel }
+            }
             border.width: ShellConfig.notifications.borderWidth
             border.color: Theme.frameBorder
             clip: false
@@ -272,7 +332,7 @@ Item {
                 width: ShellConfig.wallpaperPicker.ornamentSize
                 height: width
                 location: FloralCorner.TopLeft
-                strength: 0.58
+                strength: 0.84
                 z: 45
             }
 
@@ -285,7 +345,7 @@ Item {
                 width: ShellConfig.wallpaperPicker.ornamentSize
                 height: width
                 location: FloralCorner.TopRight
-                strength: 0.58
+                strength: 0.84
                 z: 45
             }
 
@@ -298,7 +358,7 @@ Item {
                 width: ShellConfig.wallpaperPicker.ornamentSize
                 height: width
                 location: FloralCorner.BottomLeft
-                strength: 0.58
+                strength: 0.84
                 z: 45
             }
 
@@ -311,7 +371,7 @@ Item {
                 width: ShellConfig.wallpaperPicker.ornamentSize
                 height: width
                 location: FloralCorner.BottomRight
-                strength: 0.58
+                strength: 0.84
                 z: 45
             }
 
@@ -335,7 +395,7 @@ Item {
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "wallpapers"
-                        color: Theme.moduleLabel
+                        color: Theme.moduleValue
                         renderType: Text.NativeRendering
                         font {
                             family: ShellConfig.typography.monoFamily
@@ -350,7 +410,7 @@ Item {
                         width: Math.min(implicitWidth,
                             wallpaperHeader.width - ShellConfig.wallpaperPicker.ornamentSize * 2)
                         text: `${folderModel.count} images  ·  ${root.wallpaperFolder}`
-                        color: Theme.textMuted
+                        color: Theme.moduleLabel
                         elide: Text.ElideMiddle
                         horizontalAlignment: Text.AlignHCenter
                         renderType: Text.NativeRendering
@@ -427,40 +487,79 @@ Item {
                     }
                 }
 
-                Text {
+                Row {
                     anchors {
                         horizontalCenter: parent.horizontalCenter
                         top: parent.top
-                        topMargin: 16
-                    }
-                    width: Math.min(implicitWidth,
-                        parent.width - ShellConfig.wallpaperPicker.ornamentSize * 2)
-                    text: root._currentView.currentItem
-                        ? root._currentView.currentItem.fileName : ""
-                    color: Theme.moduleValue
-                    elide: Text.ElideMiddle
-                    horizontalAlignment: Text.AlignHCenter
-                    renderType: Text.NativeRendering
-                    font {
-                        family: ShellConfig.typography.monoFamily
-                        styleName: ShellConfig.typography.fineStyle
-                        pixelSize: ShellConfig.notifications.bodySize
-                    }
-                }
-
-                Text {
-                    anchors {
-                        horizontalCenter: parent.horizontalCenter
                         bottom: parent.bottom
-                        bottomMargin: 18
+                        topMargin: 10
+                        bottomMargin: 7
                     }
-                    text: "← / →  browse     enter  apply     esc  close"
-                    color: Theme.textMuted
-                    renderType: Text.NativeRendering
-                    font {
-                        family: ShellConfig.typography.monoFamily
-                        pixelSize: ShellConfig.wallpaperPicker.detailSize
-                        letterSpacing: ShellConfig.bar.labelLetterSpacing * 0.35
+                    spacing: ShellConfig.scaled(32)
+
+                    Column {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: ShellConfig.scaled(430)
+                        spacing: 3
+
+                        Text {
+                            width: parent.width
+                            text: root._currentView.currentItem
+                                ? root._currentView.currentItem.fileName : ""
+                            color: Theme.moduleValue
+                            elide: Text.ElideMiddle
+                            horizontalAlignment: Text.AlignRight
+                            renderType: Text.NativeRendering
+                            font {
+                                family: ShellConfig.typography.monoFamily
+                                styleName: ShellConfig.typography.fineStyle
+                                pixelSize: ShellConfig.notifications.bodySize
+                            }
+                        }
+
+                        Text {
+                            width: parent.width
+                            text: root._currentView.currentItem
+                                ? `${root._currentView.currentIndex + 1} of ${stableModel.count}`
+                                    + (root._currentView.currentItem.fileName
+                                        === root.currentWallpaperFile ? "  ·  current" : "")
+                                : ""
+                            color: Theme.moduleLabel
+                            horizontalAlignment: Text.AlignRight
+                            renderType: Text.NativeRendering
+                            font {
+                                family: ShellConfig.typography.monoFamily
+                                pixelSize: ShellConfig.wallpaperPicker.detailSize
+                                letterSpacing: ShellConfig.bar.labelLetterSpacing * 0.25
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: ShellConfig.notifications.borderWidth
+                        height: parent.height * 0.62
+                        color: Theme.frameBorderFaint
+                    }
+
+                    Row {
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: ShellConfig.scaled(18)
+
+                        FooterHint {
+                            keyText: "←  →"
+                            labelText: "browse"
+                        }
+
+                        FooterHint {
+                            keyText: "enter"
+                            labelText: "apply"
+                        }
+
+                        FooterHint {
+                            keyText: "esc"
+                            labelText: "close"
+                        }
                     }
                 }
             }
@@ -527,7 +626,12 @@ Item {
                     + ShellConfig.notifications.cardSpacing
             }
             opacity: overlay.visible ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 150 } }
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: ShellConfig.visuals.motionNormal
+                    easing.type: Easing.InOutCubic
+                }
+            }
             clip: true
             z: 3
 
@@ -564,8 +668,8 @@ Item {
             readonly property int borderWidth:  (root.cfg.borderWidth  !== undefined) ? parseInt(root.cfg.borderWidth)  : 3
             readonly property int spacing:      (root.cfg.spacing      !== undefined) ? parseInt(root.cfg.spacing)      : 10
             readonly property int overlayOpacity: (root.cfg.overlayOpacity !== undefined) ? parseInt(root.cfg.overlayOpacity) : 80
-            readonly property int cornerRadius: 0
-            readonly property bool enableRounding: false
+            readonly property int cornerRadius: ShellConfig.visuals.cardRadius
+            readonly property bool enableRounding: true
             readonly property real skewFactor: 0
             readonly property int _baseWallpaperCount: folderModel.count
 
@@ -573,11 +677,16 @@ Item {
                 let val = (root.cfg.selectedScale !== undefined) ? parseFloat(root.cfg.selectedScale) : 108;
                 return val > 10 ? val / 100.0 : val;
             }
-            readonly property real selectedWidth: itemWidth * 1.35
+            readonly property real selectedWidth: itemWidth * 1.25
             readonly property real sideWidth: itemWidth * 0.58
-            readonly property real selectedHeight: itemHeight + 20
+            readonly property real availableCardHeight: Math.max(160,
+                height - ShellConfig.visuals.shadowBleed * 1.15)
+            readonly property real selectedHeight: Math.min(itemHeight,
+                availableCardHeight)
+            readonly property real sideHeight: Math.min(itemHeight * 0.88,
+                Math.max(140, selectedHeight - ShellConfig.scaled(16)))
             readonly property real slotWidth: sideWidth + spacing
-            readonly property int animationDuration: 220
+            readonly property int animationDuration: ShellConfig.visuals.motionNormal
             readonly property bool enableHoldExpand: !!(root.cfg.enableHoldExpand === true || root.cfg.enableHoldExpand === "true")
             readonly property real holdExpandRatio: ((root.cfg.holdExpandRatio !== undefined) ? parseFloat(root.cfg.holdExpandRatio) : 35.0) / 100.0
             readonly property int holdDelay: (root.cfg.holdDelay !== undefined) ? parseInt(root.cfg.holdDelay) : 1500
@@ -619,7 +728,8 @@ Item {
                 Item {
                     id: delegateRoot
                     readonly property real targetWidth: isCurrent ? carousel.selectedWidth : carousel.sideWidth
-                    readonly property real targetHeight: isCurrent ? carousel.selectedHeight : carousel.itemHeight
+                    readonly property real targetHeight: isCurrent
+                        ? carousel.selectedHeight : carousel.sideHeight
 
                     width: carousel.slotWidth
                     height: carousel.selectedHeight
@@ -632,6 +742,8 @@ Item {
                     readonly property bool _effectivelyInfinite: root._isInfinite
 
                     readonly property bool isCurrent: _effectivelyInfinite ? PathView.isCurrentItem : ListView.isCurrentItem
+                    readonly property bool isApplied:
+                        fileName === root.currentWallpaperFile
 
                     readonly property int signedDistance: {
                         if (_effectivelyInfinite) {
@@ -695,15 +807,31 @@ Item {
                         width: delegateRoot.targetWidth
                         height: delegateRoot.targetHeight
                         scale: confirmationScale
+                            * (cardPointer.containsMouse ? 1.008 : 1)
 
                         Behavior on width {
-                            SmoothedAnimation { duration: carousel.animationDuration }
+                            NumberAnimation {
+                                duration: carousel.animationDuration
+                                easing.type: Easing.InOutCubic
+                            }
                         }
                         Behavior on height {
-                            SmoothedAnimation { duration: carousel.animationDuration }
+                            NumberAnimation {
+                                duration: carousel.animationDuration
+                                easing.type: Easing.InOutCubic
+                            }
                         }
                         Behavior on anchors.horizontalCenterOffset {
-                            SmoothedAnimation { duration: carousel.animationDuration }
+                            NumberAnimation {
+                                duration: carousel.animationDuration
+                                easing.type: Easing.InOutCubic
+                            }
+                        }
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: ShellConfig.visuals.motionFast
+                                easing.type: Easing.OutCubic
+                            }
                         }
 
                         readonly property bool isOtherConfirming: carousel.confirmingIndex >= 0 && !isConfirmed
@@ -728,7 +856,7 @@ Item {
                                 target: visualCard
                                 property: "confirmationScale"
                                 from: 1.0
-                                to: 1.16
+                                to: 1.055
                                 duration: 140
                                 easing.type: Easing.OutCubic
                             }
@@ -743,10 +871,32 @@ Item {
                         }
 
                         Behavior on opacity {
-                            NumberAnimation { duration: carousel.animationDuration; easing.type: Easing.InOutQuad }
+                            NumberAnimation {
+                                duration: carousel.animationDuration
+                                easing.type: Easing.InOutCubic
+                            }
                         }
 
-                        Rectangle {
+                        RectangularShadow {
+                            anchors.fill: cardSurface
+                            visible: delegateRoot.isCurrent
+                            radius: cardSurface.radius
+                            blur: ShellConfig.visuals.shadowBlur * 0.88
+                            spread: delegateRoot.isCurrent
+                                ? ShellConfig.visuals.shadowSpread : 0
+                            offset: Qt.vector2d(0,
+                                delegateRoot.isCurrent
+                                    ? ShellConfig.visuals.shadowOffsetY
+                                    : ShellConfig.scaled(2))
+                            color: delegateRoot.isCurrent
+                                ? Theme.shadowColor : Theme.shadowSoft
+                            opacity: visualCard.confirmationOpacity
+                                * (delegateRoot.isCurrent ? 1 : 0.42)
+                        }
+
+                        StyledClippingRect {
+                            id: cardSurface
+
                             anchors.fill: parent
                             opacity: visualCard.confirmationOpacity
                             radius: carousel.cornerRadius
@@ -755,17 +905,11 @@ Item {
                                 ? carousel.borderWidth : ShellConfig.notifications.borderWidth
                             border.color: delegateRoot.isCurrent
                                 ? Theme.frameBorder : Theme.frameBorderSoft
-                            clip: true
-
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: delegateRoot.pickWallpaper()
-                                z: 10
-                            }
+                            contentUnderBorder: true
 
                             Image {
+                                id: wallpaperImage
+
                                 anchors.fill: parent
                                 anchors.margins: carousel.borderWidth + 2
                                 source: delegateRoot.fileUrl
@@ -775,6 +919,53 @@ Item {
                                 asynchronous: true
                                 smooth: true
                                 mipmap: true
+                                opacity: delegateRoot.isCurrent ? 1 : 0.68
+
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: carousel.animationDuration
+                                        easing.type: Easing.InOutCubic
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                anchors.fill: wallpaperImage
+                                color: Theme.panel
+                                opacity: delegateRoot.isCurrent ? 0 : 0.25
+
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: carousel.animationDuration
+                                        easing.type: Easing.InOutCubic
+                                    }
+                                }
+                            }
+
+                            FloralCorner {
+                                visible: delegateRoot.isCurrent
+                                anchors {
+                                    right: parent.right
+                                    top: parent.top
+                                    margins: carousel.borderWidth + 3
+                                }
+                                width: Math.min(parent.width, parent.height) * 0.34
+                                height: width
+                                location: FloralCorner.TopRight
+                                strength: 0.44
+                            }
+
+                            FloralCorner {
+                                visible: delegateRoot.isCurrent
+                                anchors {
+                                    left: parent.left
+                                    bottom: parent.bottom
+                                    margins: carousel.borderWidth + 3
+                                }
+                                width: Math.min(parent.width, parent.height) * 0.3
+                                height: width
+                                location: FloralCorner.BottomLeft
+                                strength: 0.32
                             }
 
                             Rectangle {
@@ -788,16 +979,59 @@ Item {
                             }
 
                             Rectangle {
+                                visible: delegateRoot.isApplied
+                                anchors {
+                                    left: parent.left
+                                    top: parent.top
+                                    leftMargin: ShellConfig.notifications.cardPadding
+                                    topMargin: ShellConfig.notifications.cardPadding
+                                }
+                                width: appliedLabel.implicitWidth
+                                    + ShellConfig.scaled(18)
+                                height: ShellConfig.scaled(25)
+                                radius: ShellConfig.visuals.controlRadius
+                                color: Theme.panelVeil
+                                border.width: ShellConfig.notifications.borderWidth
+                                border.color: Theme.moduleLabel
+
+                                Text {
+                                    id: appliedLabel
+
+                                    anchors.centerIn: parent
+                                    text: "current"
+                                    color: Theme.moduleValue
+                                    renderType: Text.NativeRendering
+                                    font {
+                                        family: ShellConfig.typography.monoFamily
+                                        styleName: ShellConfig.typography.fineStyle
+                                        pixelSize: ShellConfig.wallpaperPicker.detailSize
+                                    }
+                                }
+                            }
+
+                            Rectangle {
                                 anchors {
                                     left: parent.left
                                     right: parent.right
                                     bottom: parent.bottom
                                     margins: carousel.borderWidth + 2
                                 }
-                                height: ShellConfig.notifications.actionHeight
+                                height: ShellConfig.notifications.actionHeight * 1.35
                                 visible: delegateRoot.isCurrent
-                                color: Theme.panel
-                                opacity: 0.9
+                                gradient: Gradient {
+                                    GradientStop {
+                                        position: 0
+                                        color: Qt.alpha(Theme.panel, 0)
+                                    }
+                                    GradientStop {
+                                        position: 0.55
+                                        color: Qt.alpha(Theme.panel, 0.78)
+                                    }
+                                    GradientStop {
+                                        position: 1
+                                        color: Theme.panel
+                                    }
+                                }
                             }
 
                             Text {
@@ -821,6 +1055,16 @@ Item {
                                     styleName: ShellConfig.typography.fineStyle
                                     pixelSize: ShellConfig.wallpaperPicker.detailSize
                                 }
+                            }
+
+                            MouseArea {
+                                id: cardPointer
+
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: delegateRoot.pickWallpaper()
+                                z: 20
                             }
                         }
                     }
