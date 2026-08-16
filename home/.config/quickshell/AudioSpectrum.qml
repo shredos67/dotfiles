@@ -18,6 +18,19 @@ Singleton {
 	property bool hasRealFrame: false
 	property bool cavaFailed: false
 	property real fallbackPhase: 0
+	property int activeConsumers: 0
+
+	function acquire(): void {
+		activeConsumers++
+	}
+
+	function release(): void {
+		activeConsumers = Math.max(0, activeConsumers - 1)
+		if (activeConsumers === 0) {
+			hasRealFrame = false
+			levels = emptyLevels()
+		}
+	}
 
 	function emptyLevels(): var {
 		return Array(root.bandCount).fill(0)
@@ -84,7 +97,7 @@ Singleton {
 	Process {
 		id: cava
 
-		running: root.playing && !root.cavaFailed
+		running: root.playing && root.activeConsumers > 0 && !root.cavaFailed
 		command: ["cava", "-p", Quickshell.shellDir + "/assets/cava-media.ini"]
 		stdout: SplitParser {
 			splitMarker: "\n"
@@ -101,7 +114,7 @@ Singleton {
 
 	Timer {
 		interval: 84
-		running: root.playing && !root.hasRealFrame
+		running: root.playing && root.activeConsumers > 0 && !root.hasRealFrame
 		repeat: true
 		triggeredOnStart: true
 		onTriggered: {

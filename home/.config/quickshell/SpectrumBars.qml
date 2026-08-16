@@ -7,9 +7,29 @@ Item {
 	property real spacing: 2
 	property real minimumLevel: 0.06
 	property real levelGain: 1
+	property bool active: false
+	property bool registered: false
 	property color lowColour: Theme.accentSecondary
 	property color middleColour: Theme.moduleLabel
 	property color highColour: Theme.frameBorder
+
+	function syncConsumer(): void {
+		if (active === registered)
+			return
+
+		registered = active
+		if (registered)
+			AudioSpectrum.acquire()
+		else
+			AudioSpectrum.release()
+	}
+
+	onActiveChanged: syncConsumer()
+	Component.onCompleted: syncConsumer()
+	Component.onDestruction: {
+		if (registered)
+			AudioSpectrum.release()
+	}
 
 	Row {
 		anchors.fill: parent

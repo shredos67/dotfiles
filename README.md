@@ -67,14 +67,23 @@ the shell is qml and is basically the main character here
 - enabling the dock moves date and time plus the battery into it, brightness and volume stay in the top bar where their useful hover controls already are
 - every app in the launcher has a rendered pin button, pinning or unpinning updates the dock without closing the launcher
 - settings app on `super comma`, appearance dock and motion changes are saved live, it also has real wi fi bluetooth pipewire brightness power and session controls instead of being a fake settings shaped decoration
+- dashboard on `super a` or a left click on the clock, overview has the profile calendar media battery and real shortcuts, performance has live cpu memory storage and network graphs, media has player switching art seeking volume and the equalizer, controls has the actually useful toggles and capture actions
+- right click the clock when u only want the small calendar
 - media popup with art seekable progress rendered controls and a real cava equalizer that reacts to whatever is playing
+- cava is reference counted now, it stops completely whenever every equalizer is hidden instead of quietly eating frames because something is playing
 - matching smaller popups for network brightness and volume
-- click the clock for a compact real calendar with month controls, volume and brightness changes get a tiny bar osd that stays outside the macbook notch
+- hover the active window title for workspace and layout details plus rendered focus float maximize pin and close controls, click the title if u want the popout to stay open
+- volume and brightness changes get a tiny bar osd that stays outside the macbook notch
 - network brightness volume and battery readouts are actual shortcuts now, clicking one opens the matching settings page while hover keeps the small control popup
+- saved wi fi profiles live in settings with their real security and nearby state, app audio streams get their own pipewire sliders too
 - when the dock is off the system tray falls back into the top bar, active recording muted mic and dnd replace the window title until u deal with them
+- tray items have their real nested menus now, including checkboxes radio choices separators icons scrolling and back navigation in the same floral surface
+- optional idle handling lives inside quickshell without another daemon, enable it on the system page for a 5 minute hyprlock and 10 minute display off default, playback can keep the display awake and every part is adjustable there
 - wallpaper picker on `super w`, full width masked cards smooth cubic movement current wallpaper state metadata floral framing and no cards escaping through the top or bottom anymore
 - one shared engraved popup chrome so the outer and faint inner borders actually continue from the bar
 - floral png corner masks on the launcher power menu notification drawer and wallpaper picker
+- floral corner images are colored once by the wallpaper worker instead of running another gpu color effect for every little flower on screen
+- notification cards can expand long text and copy the body now, all of those controls are rendered and blank card space stays inside the drawer instead of closing it
 - shared shadows engraved inner lines accent glow and cubic motion so the floating pieces look like one setup instead of six unrelated panels
 - most useful dimensions live in `~/.config/quickshell/ShellConfig.qml` so u dont have to hunt through every component again
 - live colors come from `~/.config/quickshell/Theme.qml`
@@ -89,6 +98,8 @@ qs ipc call wallpaperCarousel toggle
 qs ipc call settings toggle
 qs ipc call settings openPage 4
 qs ipc call calendar toggle
+qs ipc call dashboard toggle
+qs ipc call dashboard openTab 1
 ```
 
 logs when qml decides one comma ruined its entire life
@@ -97,7 +108,9 @@ logs when qml decides one comma ruined its entire life
 qs log
 ```
 
-the locally bundled caelestia code is used for app discovery session actions notifications mpris and system values, my actual shell layout and styling are the qml files around it
+the locally bundled [caelestia shell](https://github.com/caelestia-dots/shell) code is used for app discovery session actions notifications mpris and system values, my actual shell layout and styling are the qml files around it
+
+the behavior pass was compared against upstream `v2.3.0` and mirrors the good architecture bits, coordinated panel ownership lazy exit aware surfaces service backed pages and contextual controls, it very intentionally does not start caelestias material blobs full screen visualizer qml lock screen or eager weather service
 
 ### wallpaper and the pywal mess
 
@@ -152,6 +165,7 @@ useful binds
 | `super w` | wallpapers |
 | `super n` | notifications |
 | `super comma` | shell settings |
+| `super a` | dashboard |
 | `super l` | hyprlock |
 | `super t` | foot |
 | `super e` | nautilus |

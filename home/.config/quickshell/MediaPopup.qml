@@ -193,6 +193,7 @@ Item {
 							margins: 4
 						}
 						height: 12
+						active: root.shouldOpen
 						count: 18
 						spacing: 1.5
 						minimumLevel: 0.08
@@ -246,6 +247,7 @@ Item {
 					y: 44
 					width: parent.width
 					height: 34
+					active: root.shouldOpen
 					count: root.spectrumBands
 					spacing: 2
 					minimumLevel: 0.06

@@ -12,12 +12,15 @@ StyledClippingRect {
     required property var notification
     property bool popupMode
     property bool animateEntrance: true
+    property bool expanded
 
     readonly property int cardPadding: ShellConfig.notifications.cardPadding
     readonly property bool hasBody: (notification?.body ?? "").trim().length > 0
     readonly property bool hasActions: (notification?.actions?.length ?? 0) > 0
     readonly property bool hasImage: (notification?.image ?? "").length > 0
     readonly property bool hasAppIcon: (notification?.appIcon ?? "").length > 0
+    readonly property bool bodyExpandable: !popupMode && hasBody
+        && (expanded || bodyText.truncated)
     readonly property color accent: notification?.urgency === 2
         ? Theme.statusDanger
         : notification?.urgency === 0 ? Theme.accentTertiary : Theme.accentPrimary
@@ -73,6 +76,17 @@ StyledClippingRect {
 
     Behavior on opacity {
         Anim { type: Anim.DefaultEffects }
+    }
+
+    Behavior on implicitHeight {
+        NumberAnimation {
+            duration: ShellConfig.visuals.motionNormal
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    TapHandler {
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
     }
 
     Rectangle {
@@ -185,13 +199,14 @@ StyledClippingRect {
                     mipmap: true
                 }
 
-                MaterialIcon {
+                CardGlyph {
                     anchors.centerIn: parent
+                    width: Math.round(iconFrame.width * 0.48)
+                    height: width
                     visible: !root.hasImage
                         && (!root.hasAppIcon || notificationImage.status === Image.Error)
-                    text: "notifications"
-                    color: root.accent
-                    fontStyle: Tokens.font.icon.builders.medium.scale(1.15).build()
+                    kind: "notification"
+                    glyphColor: root.accent
                 }
             }
 
@@ -257,11 +272,13 @@ StyledClippingRect {
                         ? root.accent : Theme.frameBorderFaint
                 }
 
-                MaterialIcon {
+                CardGlyph {
                     anchors.centerIn: parent
-                    text: "close"
-                    color: closePointer.containsMouse ? Theme.moduleValue : Theme.textMuted
-                    fontStyle: Tokens.font.icon.medium
+                    width: Math.round(closeButton.width * 0.39)
+                    height: width
+                    kind: "close"
+                    glyphColor: closePointer.containsMouse
+                        ? Theme.moduleValue : Theme.textMuted
                 }
 
                 MouseArea {
@@ -302,18 +319,43 @@ StyledClippingRect {
         }
 
         Text {
+            id: bodyText
+
             width: parent.width
             visible: root.hasBody
             text: (root.notification?.body ?? "").toLowerCase()
             color: Theme.textMuted
             textFormat: /[<>]/.test(text) ? Text.StyledText : Text.PlainText
             wrapMode: Text.Wrap
-            maximumLineCount: root.popupMode ? 3 : 7
-            elide: Text.ElideRight
+            maximumLineCount: root.popupMode ? 3 : root.expanded ? 1000 : 7
+            elide: root.expanded ? Text.ElideNone : Text.ElideRight
             renderType: Text.NativeRendering
             font {
                 family: ShellConfig.typography.monoFamily
                 pixelSize: ShellConfig.notifications.bodySize
+            }
+        }
+
+        Row {
+            width: parent.width
+            height: visible ? ShellConfig.notifications.actionHeight : 0
+            visible: !root.popupMode && root.hasBody
+            spacing: Math.round(ShellConfig.notifications.cardSpacing * 0.65)
+            layoutDirection: Qt.RightToLeft
+
+            CardToolButton {
+                label: "copy"
+                icon: "copy"
+                onTriggered: Quickshell.clipboardText
+                    = root.notification?.body ?? ""
+            }
+
+            CardToolButton {
+                visible: root.bodyExpandable
+                label: root.expanded ? "less" : "more"
+                icon: "expand"
+                iconRotation: root.expanded ? 180 : 0
+                onTriggered: root.expanded = !root.expanded
             }
         }
 
@@ -388,6 +430,141 @@ StyledClippingRect {
                 activeNotification.timer.stop();
             else
                 activeNotification.timer.start();
+        }
+    }
+
+    component CardToolButton: Rectangle {
+        id: toolButton
+
+        required property string label
+        required property string icon
+        property real iconRotation
+        signal triggered
+
+        width: toolContent.implicitWidth
+            + ShellConfig.notifications.cardPadding * 1.2
+        height: ShellConfig.notifications.actionHeight
+        radius: ShellConfig.visuals.controlRadius
+        color: toolPointer.containsMouse ? Theme.panelHighlight : Theme.panel
+        border.width: ShellConfig.notifications.borderWidth
+        border.color: toolPointer.containsMouse
+            ? root.accent : Theme.frameBorderFaint
+        scale: toolPointer.pressed ? 0.94
+            : toolPointer.containsMouse ? 1.025 : 1
+
+        Behavior on scale {
+            NumberAnimation {
+                duration: ShellConfig.bar.menuAnimationMs
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Row {
+            id: toolContent
+
+            anchors.centerIn: parent
+            spacing: Math.round(ShellConfig.notifications.cardSpacing * 0.5)
+            layoutDirection: Qt.LeftToRight
+
+            CardGlyph {
+                width: Math.round(ShellConfig.notifications.metaSize * 1.15)
+                height: width
+                anchors.verticalCenter: parent.verticalCenter
+                kind: toolButton.icon
+                glyphColor: toolPointer.containsMouse
+                    ? Theme.moduleValue : Theme.textMuted
+                rotation: toolButton.iconRotation
+
+                Behavior on rotation {
+                    NumberAnimation {
+                        duration: ShellConfig.visuals.motionFast
+                        easing.type: Easing.OutCubic
+                    }
+                }
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: toolButton.label
+                color: Theme.moduleValue
+                renderType: Text.NativeRendering
+                font {
+                    family: ShellConfig.typography.monoFamily
+                    styleName: ShellConfig.typography.fineStyle
+                    pixelSize: ShellConfig.notifications.metaSize
+                }
+            }
+        }
+
+        MouseArea {
+            id: toolPointer
+
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: toolButton.triggered()
+        }
+    }
+
+    component CardGlyph: Canvas {
+        id: glyph
+
+        required property string kind
+        property color glyphColor: Theme.moduleValue
+        property real glyphStroke: Math.max(1.35, width / 9)
+
+        antialiasing: true
+
+        onKindChanged: requestPaint()
+        onGlyphColorChanged: requestPaint()
+        onGlyphStrokeChanged: requestPaint()
+        onWidthChanged: requestPaint()
+        onHeightChanged: requestPaint()
+
+        onPaint: {
+            const context = getContext("2d");
+            const size = Math.min(width, height);
+            const left = (width - size) / 2;
+            const top = (height - size) / 2;
+            const x = value => left + value * size;
+            const y = value => top + value * size;
+
+            context.reset();
+            context.strokeStyle = glyph.glyphColor;
+            context.fillStyle = glyph.glyphColor;
+            context.lineWidth = glyph.glyphStroke;
+            context.lineCap = "round";
+            context.lineJoin = "round";
+
+            if (glyph.kind === "notification") {
+                context.beginPath();
+                context.moveTo(x(0.2), y(0.72));
+                context.quadraticCurveTo(x(0.32), y(0.6), x(0.32), y(0.39));
+                context.bezierCurveTo(x(0.32), y(0.16), x(0.68), y(0.16),
+                    x(0.68), y(0.39));
+                context.quadraticCurveTo(x(0.68), y(0.6), x(0.8), y(0.72));
+                context.closePath();
+                context.stroke();
+                context.beginPath();
+                context.arc(x(0.5), y(0.78), size * 0.085, 0, Math.PI);
+                context.stroke();
+            } else if (glyph.kind === "close") {
+                context.beginPath();
+                context.moveTo(x(0.2), y(0.2));
+                context.lineTo(x(0.8), y(0.8));
+                context.moveTo(x(0.8), y(0.2));
+                context.lineTo(x(0.2), y(0.8));
+                context.stroke();
+            } else if (glyph.kind === "copy") {
+                context.strokeRect(x(0.3), y(0.16), size * 0.54, size * 0.58);
+                context.strokeRect(x(0.16), y(0.3), size * 0.54, size * 0.58);
+            } else if (glyph.kind === "expand") {
+                context.beginPath();
+                context.moveTo(x(0.17), y(0.35));
+                context.lineTo(x(0.5), y(0.68));
+                context.lineTo(x(0.83), y(0.35));
+                context.stroke();
+            }
         }
     }
 }

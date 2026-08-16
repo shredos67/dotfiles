@@ -16,6 +16,8 @@ import qs.components
 Item {
     id: root
 
+    readonly property bool active: overlay.visible
+
     property string defaultWallpaperFolder: ""
     property string currentWallpaperPath: ""
     property var extraDirectories: []

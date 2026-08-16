@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell.Services.Mpris
 
 Item {
@@ -37,14 +36,6 @@ Item {
 		color: root.hovered ? Theme.panelRaised : "transparent"
 		border.width: root.hovered ? ShellConfig.bar.contentBorderWidth : 0
 		border.color: Theme.frameBorder
-		layer.enabled: root.hovered
-		layer.effect: MultiEffect {
-			shadowEnabled: true
-			shadowColor: Theme.frameBorder
-			shadowOpacity: 0.18
-			shadowBlur: 0.7
-			blurMax: 12
-		}
 
 		Behavior on color {
 			ColorAnimation { duration: ShellConfig.bar.mediaAnimationMs }
@@ -63,6 +54,7 @@ Item {
 
 			SpectrumBars {
 				anchors.fill: parent
+				active: root.hovered
 				count: root.spectrumBands
 				spacing: 1.4
 				minimumLevel: root.playing ? 0.12 : 0.06

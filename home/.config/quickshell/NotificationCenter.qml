@@ -254,7 +254,7 @@ Scope {
             : WlrKeyboardFocus.None
 
         mask: Region {
-            width: root.panelOffsetScale < 1 ? panelWindow.width : 0
+            width: root.panelOpen ? panelWindow.width : 0
             height: panelWindow.height
         }
 

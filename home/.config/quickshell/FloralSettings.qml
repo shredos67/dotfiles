@@ -24,6 +24,13 @@ Singleton {
     property alias drawerRadius: saved.drawerRadius
     property alias accentStyle: saved.accentStyle
     property alias pinnedIds: saved.pinnedIds
+    property alias idleEnabled: saved.idleEnabled
+    property alias idleLockTimeoutMinutes: saved.idleLockTimeoutMinutes
+    property alias idleDpmsTimeoutMinutes: saved.idleDpmsTimeoutMinutes
+    property alias idleInhibitLockWhenPlaying: saved.idleInhibitLockWhenPlaying
+    property alias idleInhibitDpmsWhenPlaying: saved.idleInhibitDpmsWhenPlaying
+    property alias idleInhibitWhenCharging: saved.idleInhibitWhenCharging
+    property alias idleLockBeforeSleep: saved.idleLockBeforeSleep
 
     property bool settingsOpen: false
     property bool dockLauncherOpen: false
@@ -139,6 +146,13 @@ Singleton {
             property real drawerRadius: 26
             property int accentStyle: 0
             property string pinnedIds: "org.mozilla.firefox|foot|org.gnome.Nautilus|app.legcord.Legcord"
+            property bool idleEnabled: false
+            property int idleLockTimeoutMinutes: 5
+            property int idleDpmsTimeoutMinutes: 10
+            property bool idleInhibitLockWhenPlaying: false
+            property bool idleInhibitDpmsWhenPlaying: true
+            property bool idleInhibitWhenCharging: false
+            property bool idleLockBeforeSleep: true
         }
     }
 }

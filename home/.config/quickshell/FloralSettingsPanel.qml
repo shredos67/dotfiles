@@ -20,6 +20,8 @@ Scope {
         pageLoader.opacity = 0;
         pageLoader.x = 14;
         pageEntrance.restart();
+        if (page === 4 || page === 6)
+            FloralSystemService.refresh();
     }
 
     function openPage(index) {
@@ -1812,6 +1814,154 @@ Scope {
                     pixelSize: 13
                 }
             }
+
+            SectionLabel {
+                visible: FloralSystemService.savedNetworks.length > 0
+                text: "saved networks"
+                topPadding: 6
+            }
+
+            Repeater {
+                model: FloralSystemService.savedNetworks
+
+                Rectangle {
+                    id: savedProfile
+
+                    required property var modelData
+                    property bool forgetArmed: false
+
+                    width: networkColumn.width
+                    height: 68
+                    radius: 12
+                    color: modelData.active
+                        ? FloralSettings.withAlpha(
+                            FloralSettings.accentColor, 0.14)
+                        : FloralSettings.withAlpha(Theme.panelRaised, 0.48)
+                    border.width: modelData.active ? 2 : 1
+                    border.color: modelData.active
+                        ? FloralSettings.accentColor
+                        : Theme.frameBorderFaint
+
+                    Rectangle {
+                        anchors {
+                            left: parent.left
+                            leftMargin: 14
+                            verticalCenter: parent.verticalCenter
+                        }
+                        width: 9
+                        height: 9
+                        radius: 5
+                        color: savedProfile.modelData.active
+                            ? FloralSettings.accentColor
+                            : Theme.frameBorderFaint
+                    }
+
+                    Column {
+                        anchors {
+                            left: parent.left
+                            right: profileActions.left
+                            leftMargin: 37
+                            rightMargin: 14
+                            verticalCenter: parent.verticalCenter
+                        }
+                        spacing: 3
+
+                        Text {
+                            width: parent.width
+                            text: savedProfile.modelData.ssid
+                            color: Theme.moduleValue
+                            elide: Text.ElideRight
+                            renderType: Text.NativeRendering
+                            font {
+                                family: ShellConfig.typography.monoFamily
+                                styleName: ShellConfig.typography.fineStyle
+                                pixelSize: 14
+                                weight: Font.DemiBold
+                            }
+                        }
+
+                        Text {
+                            width: parent.width
+                            text: `${savedProfile.modelData.security} · ${
+                                savedProfile.modelData.active
+                                    ? "connected"
+                                    : savedProfile.modelData.available
+                                        ? "nearby"
+                                        : "not nearby"}`
+                            color: savedProfile.modelData.active
+                                ? FloralSettings.accentColor
+                                : Theme.textMuted
+                            elide: Text.ElideRight
+                            renderType: Text.NativeRendering
+                            font {
+                                family: ShellConfig.typography.monoFamily
+                                styleName: ShellConfig.typography.fineStyle
+                                pixelSize: 11
+                            }
+                        }
+                    }
+
+                    Row {
+                        id: profileActions
+
+                        anchors {
+                            right: parent.right
+                            rightMargin: 10
+                            verticalCenter: parent.verticalCenter
+                        }
+                        spacing: 6
+
+                        MiniButton {
+                            width: 82
+                            height: 40
+                            title: savedProfile.modelData.active
+                                ? "active"
+                                : "connect"
+                            selected: savedProfile.modelData.active
+                            available: FloralSystemService.wifiEnabled
+                                && !FloralSystemService.networkBusy
+                                && !savedProfile.modelData.active
+                            onClicked: FloralSystemService.activateSavedNetwork(
+                                savedProfile.modelData.ssid)
+                        }
+
+                        MiniButton {
+                            width: savedProfile.forgetArmed ? 84 : 68
+                            height: 40
+                            title: savedProfile.forgetArmed
+                                ? "confirm"
+                                : "forget"
+                            selected: savedProfile.forgetArmed
+                            available: !FloralSystemService.networkBusy
+                            onClicked: {
+                                if (!savedProfile.forgetArmed) {
+                                    savedProfile.forgetArmed = true;
+                                    forgetTimer.restart();
+                                    return;
+                                }
+                                forgetTimer.stop();
+                                savedProfile.forgetArmed = false;
+                                FloralSystemService.forgetSavedNetwork(
+                                    savedProfile.modelData.ssid);
+                            }
+
+                            Behavior on width {
+                                NumberAnimation {
+                                    duration: FloralSettings.duration(130)
+                                    easing.type: Easing.OutCubic
+                                }
+                            }
+                        }
+                    }
+
+                    Timer {
+                        id: forgetTimer
+
+                        interval: 3000
+                        onTriggered: savedProfile.forgetArmed = false
+                    }
+                }
+            }
         }
     }
 
@@ -2089,6 +2239,34 @@ Scope {
                     onClicked: FloralSystemService.selectAudioSource(modelData)
                 }
             }
+
+            SectionLabel {
+                visible: FloralSystemService.audioStreams.length > 0
+                text: "application streams"
+                topPadding: 6
+            }
+
+            Repeater {
+                model: FloralSystemService.audioStreams
+
+                SliderRow {
+                    required property var modelData
+
+                    width: audioColumn.width
+                    title: FloralSystemService.audioStreamName(modelData)
+                    detail: `${FloralSystemService.audioStreamDetail(modelData)}${
+                        modelData?.audio?.muted ? " · muted" : ""}`
+                    from: 0
+                    to: 1
+                    stepSize: 0.01
+                    value: modelData?.audio?.volume ?? 0
+                    valueText: modelData?.audio?.muted
+                        ? "muted"
+                        : `${Math.round(value * 100)}%`
+                    onMoved: value => FloralSystemService.setAudioStreamVolume(
+                        modelData, value)
+                }
+            }
         }
     }
 
@@ -2156,6 +2334,85 @@ Scope {
                         && PowerProfiles.hasPerformanceProfile
                     onClicked: PowerProfiles.profile = PowerProfile.Performance
                 }
+            }
+
+            SectionLabel {
+                text: "idle and lock"
+                topPadding: 6
+            }
+
+            ToggleRow {
+                width: parent.width
+                title: "automatic idle"
+                detail: "lock and turn off the display after inactivity"
+                checked: FloralSettings.idleEnabled
+                onToggled: value => FloralSettings.idleEnabled = value
+            }
+
+            SliderRow {
+                width: parent.width
+                visible: FloralSettings.idleEnabled
+                title: "lock after"
+                detail: "session inactivity"
+                from: 1
+                to: 60
+                stepSize: 1
+                value: FloralSettings.idleLockTimeoutMinutes
+                valueText: `${Math.round(value)} min`
+                onMoved: value => FloralSettings.idleLockTimeoutMinutes
+                    = Math.round(value)
+            }
+
+            SliderRow {
+                width: parent.width
+                visible: FloralSettings.idleEnabled
+                title: "display off after"
+                detail: "session inactivity"
+                from: 2
+                to: 120
+                stepSize: 1
+                value: FloralSettings.idleDpmsTimeoutMinutes
+                valueText: `${Math.round(value)} min`
+                onMoved: value => FloralSettings.idleDpmsTimeoutMinutes
+                    = Math.round(value)
+            }
+
+            ToggleRow {
+                width: parent.width
+                visible: FloralSettings.idleEnabled
+                title: "media keeps display on"
+                detail: "playing audio delays display power saving"
+                checked: FloralSettings.idleInhibitDpmsWhenPlaying
+                onToggled: value =>
+                    FloralSettings.idleInhibitDpmsWhenPlaying = value
+            }
+
+            ToggleRow {
+                width: parent.width
+                visible: FloralSettings.idleEnabled
+                title: "media delays lock"
+                detail: "playing audio also delays session locking"
+                checked: FloralSettings.idleInhibitLockWhenPlaying
+                onToggled: value =>
+                    FloralSettings.idleInhibitLockWhenPlaying = value
+            }
+
+            ToggleRow {
+                width: parent.width
+                visible: FloralSettings.idleEnabled
+                title: "stay awake while charging"
+                detail: "ignore automatic idle while connected to power"
+                checked: FloralSettings.idleInhibitWhenCharging
+                onToggled: value =>
+                    FloralSettings.idleInhibitWhenCharging = value
+            }
+
+            ToggleRow {
+                width: parent.width
+                title: "lock before sleep"
+                detail: "secure the session whenever the system suspends"
+                checked: FloralSettings.idleLockBeforeSleep
+                onToggled: value => FloralSettings.idleLockBeforeSleep = value
             }
 
             SectionLabel {

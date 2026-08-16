@@ -7,6 +7,7 @@ Item {
 	property bool active: false
 
 	signal clicked
+	signal secondaryClicked
 
 	readonly property bool hovered: pointer.containsMouse
 
@@ -85,7 +86,13 @@ Item {
 			topMargin: -ShellConfig.bar.popupTriggerTopExtension
 		}
 		hoverEnabled: true
+		acceptedButtons: Qt.LeftButton | Qt.RightButton
 		cursorShape: Qt.PointingHandCursor
-		onClicked: root.clicked()
+		onClicked: event => {
+			if (event.button === Qt.RightButton)
+				root.secondaryClicked()
+			else
+				root.clicked()
+		}
 	}
 }

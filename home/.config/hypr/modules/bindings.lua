@@ -22,6 +22,8 @@ return function(context)
         hl.dsp.exec_cmd("qs ipc call notificationPanel toggle"))
     hl.bind(main .. " + comma",
         hl.dsp.exec_cmd("qs ipc call settings toggle"))
+    hl.bind(main .. " + A",
+        hl.dsp.exec_cmd("qs ipc call dashboard toggle"))
     hl.bind(main .. " + L", hl.dsp.exec_cmd("hyprlock"))
     hl.bind(main .. " + E", hl.dsp.exec_cmd(context.file_manager))
     hl.bind(main .. " + V", hl.dsp.window.float({ action = "toggle" }))

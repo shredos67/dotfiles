@@ -302,4 +302,22 @@ QtObject {
         property int titleSize: root.scaled(20)
         property int detailSize: root.scaled(12)
     }
+
+    property QtObject dashboard: QtObject {
+        // dashboard surface layout and timing
+        property int width: root.scaled(1010)
+        property int height: root.scaled(660)
+        property int topMargin: root.scaled(72)
+        property int screenMargin: root.scaled(32)
+        property int panelPadding: root.scaled(22)
+        property int headerHeight: root.scaled(76)
+        property int navigationWidth: root.scaled(178)
+        property int gap: root.scaled(13)
+        property int animationMs: 250
+        property real dimOpacity: 0.64
+        property int statsUpdateMs: 1250
+        property int diskSampleDivisor: 4
+        property int historyLength: 38
+        property int ornamentSize: root.scaled(180)
+    }
 }

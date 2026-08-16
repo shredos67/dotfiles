@@ -97,22 +97,22 @@ Column {
     }
 
     SessionButton {
-        id: logout
+        id: lock
 
-        icon: Config.session.icons.logout
-        title: "sign out"
-        detail: "end this session"
-        accent: Theme.accentSecondary
-        actionName: "logout"
+        iconKind: "lock"
+        title: "lock"
+        detail: "secure this session"
+        accent: Theme.accentPrimary
+        actionName: "lock"
 
-        KeyNavigation.down: shutdown
+        KeyNavigation.down: suspend
 
         Component.onCompleted: forceActiveFocus()
 
         Connections {
             function onSessionChanged(): void {
                 if (root.screenState.session)
-                    Qt.callLater(() => logout.forceActiveFocus());
+                    Qt.callLater(() => lock.forceActiveFocus());
             }
 
             target: root.screenState
@@ -120,15 +120,28 @@ Column {
     }
 
     SessionButton {
-        id: shutdown
+        id: suspend
 
-        icon: Config.session.icons.shutdown
-        title: "power off"
-        detail: "turn off this computer"
-        accent: Theme.statusDanger
-        actionName: "poweroff"
+        iconKind: "suspend"
+        title: "suspend"
+        detail: "sleep until you return"
+        accent: Theme.accentTertiary
+        actionName: "suspend"
 
-        KeyNavigation.up: logout
+        KeyNavigation.up: lock
+        KeyNavigation.down: logout
+    }
+
+    SessionButton {
+        id: logout
+
+        iconKind: "logout"
+        title: "sign out"
+        detail: "end this session"
+        accent: Theme.accentSecondary
+        actionName: "logout"
+
+        KeyNavigation.up: suspend
         KeyNavigation.down: hibernate
     }
 
@@ -245,7 +258,7 @@ Column {
     SessionButton {
         id: hibernate
 
-        icon: Config.session.icons.hibernate
+        iconKind: "hibernate"
         title: "hibernate"
         detail: "save session to disk"
         accent: Theme.accentTertiary
@@ -258,13 +271,26 @@ Column {
     SessionButton {
         id: reboot
 
-        icon: Config.session.icons.reboot
+        iconKind: "refresh"
         title: "restart"
         detail: "restart this computer"
         accent: Theme.statusWarning
         actionName: "reboot"
 
         KeyNavigation.up: hibernate
+        KeyNavigation.down: shutdown
+    }
+
+    SessionButton {
+        id: shutdown
+
+        iconKind: "power"
+        title: "power off"
+        detail: "turn off this computer"
+        accent: Theme.statusDanger
+        actionName: "poweroff"
+
+        KeyNavigation.up: reboot
     }
 
     Item {
@@ -307,7 +333,7 @@ Column {
         id: button
 
         required property string actionName
-        required property string icon
+        required property string iconKind
         required property string title
         required property string detail
         required property color accent
@@ -316,6 +342,12 @@ Column {
             root.screenState.session = false;
 
             switch (actionName) {
+            case "lock":
+                Quickshell.execDetached(["hyprlock"]);
+                break;
+            case "suspend":
+                SessionManager.suspend();
+                break;
             case "logout":
                 SessionManager.logout();
                 break;
@@ -424,13 +456,13 @@ Column {
                     }
                 }
 
-                MaterialIcon {
+                FloralSystemGlyph {
                     anchors.centerIn: parent
-                    text: button.icon
+                    width: ShellConfig.bar.powerMenuActionIconSize
+                    height: width
+                    kind: button.iconKind
                     color: button.accent
-                    fontStyle: Tokens.font.icon.builders.large
-                        .scale(1.05 * root.menuScale).build()
-                    fill: button.activeFocus || button.hovered ? 1 : 0
+                    strokeWidth: button.activeFocus || button.hovered ? 2.1 : 1.75
                 }
             }
 

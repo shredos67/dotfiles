@@ -65,7 +65,10 @@ ShellRoot {
 			notificationCenter.closePanel()
 			menus.close()
 			settingsPanel.close()
+			dashboard.close()
+			wallpaperPicker.close()
 			trayPopup.close()
+			windowPopup.close()
 		}
 		calendarOpen = open
 	}
@@ -74,6 +77,51 @@ ShellRoot {
 		calendarOpen = false
 		trayPopup.close()
 		settingsPanel.openPage(page)
+	}
+
+	function closePanelByName(name: string): void {
+		switch (name) {
+		case "notifications":
+			notificationCenter.closePanel()
+			break
+		case "settings":
+			settingsPanel.close()
+			break
+		case "menus":
+			menus.close()
+			break
+		case "wallpaper":
+			wallpaperPicker.close()
+			break
+		case "dashboard":
+			dashboard.close()
+			break
+		}
+	}
+
+	Connections {
+		target: FloralShellState
+
+		function onPanelClaimed(name: string): void {
+			root.calendarOpen = false
+			trayPopup.close()
+			windowPopup.close()
+
+			if (name !== "notifications")
+				notificationCenter.closePanel()
+			if (name !== "settings")
+				settingsPanel.close()
+			if (name !== "menus")
+				menus.close()
+			if (name !== "wallpaper")
+				wallpaperPicker.close()
+			if (name !== "dashboard")
+				dashboard.close()
+		}
+
+		function onPanelCloseRequested(name: string): void {
+			root.closePanelByName(name)
+		}
 	}
 
 	Process {
@@ -101,16 +149,26 @@ ShellRoot {
 		id: notificationCenter
 		onPanelOpenChanged: {
 			if (panelOpen) {
+				FloralShellState.claimPanel("notifications")
 				root.calendarOpen = false
 				trayPopup.close()
 				settingsPanel.close()
 				menus.close()
+			} else {
+				FloralShellState.releasePanel("notifications")
 			}
 		}
 	}
 	FloralDock {}
+	FloralIdleManager {}
 	FloralSettingsPanel {
 		id: settingsPanel
+		onActiveChanged: {
+			if (active)
+				FloralShellState.claimPanel("settings")
+			else
+				FloralShellState.releasePanel("settings")
+		}
 		onCloseConflictsRequested: {
 			root.calendarOpen = false
 			trayPopup.close()
@@ -118,18 +176,52 @@ ShellRoot {
 			menus.close()
 		}
 	}
+	FloralDashboard {
+		id: dashboard
+
+		onCloseConflictsRequested:
+			FloralShellState.claimPanel("dashboard")
+		onActiveChanged: {
+			if (active && FloralShellState.activePanel !== "dashboard")
+				FloralShellState.claimPanel("dashboard")
+			else if (!active)
+				FloralShellState.releasePanel("dashboard")
+		}
+	}
 	CaelestiaMenus {
 		id: menus
 		onActiveChanged: {
 			if (active) {
+				FloralShellState.claimPanel("menus")
 				root.calendarOpen = false
 				trayPopup.close()
 				settingsPanel.close()
 				notificationCenter.closePanel()
+			} else if (!FloralSettings.dockLauncherOpen) {
+				FloralShellState.releasePanel("menus")
 			}
 		}
 	}
-	WallpaperCarousel.Standalone {}
+	WallpaperCarousel.Standalone {
+		id: wallpaperPicker
+		onActiveChanged: {
+			if (active)
+				FloralShellState.claimPanel("wallpaper")
+			else
+				FloralShellState.releasePanel("wallpaper")
+		}
+	}
+
+	Connections {
+		target: FloralSettings
+
+		function onDockLauncherOpenChanged(): void {
+			if (FloralSettings.dockLauncherOpen)
+				FloralShellState.claimPanel("menus")
+			else if (!menus.active)
+				FloralShellState.releasePanel("menus")
+		}
+	}
 
 	IpcHandler {
 		target: "calendar"
@@ -198,6 +290,13 @@ ShellRoot {
 			y: trayPopup.y + trayPopup.visualTop
 			width: trayPopup.width
 			height: trayPopup.revealHeight
+		}
+
+		Region {
+			x: windowPopup.x
+			y: windowPopup.y + windowPopup.visualTop
+			width: windowPopup.width
+			height: windowPopup.revealHeight
 		}
 
 	}
@@ -350,11 +449,12 @@ ShellRoot {
 				anchors.verticalCenter: parent.verticalCenter
 				visible: !FloralSettings.dockEnabled
 				currentDate: clock.date
-				active: root.calendarOpen
+				active: root.calendarOpen || dashboard.active
 				onClicked: {
-					trayPopup.close()
-					root.setCalendarOpen(!root.calendarOpen)
+					dashboard.toggle()
 				}
+				onSecondaryClicked:
+					root.setCalendarOpen(!root.calendarOpen)
 			}
 
 	      ElegantSeparator {
@@ -402,10 +502,12 @@ ShellRoot {
 				}
 			}
 	    	WindowModule {
+				id: windowSummary
 				width: ShellConfig.bar.windowTitleWidth
 				maximumWidth: ShellConfig.bar.windowTitleWidth
 				anchors.verticalCenter: parent.verticalCenter
 				visible: !statusPills.hasActiveStatus
+				onClicked: windowPopup.togglePinned()
 			}
 		}
 	}
@@ -547,6 +649,21 @@ ShellRoot {
 		x: {
 			const center = rightArea.x + rightModules.x
 				+ traySummary.x + traySummary.width / 2
+			return Math.max(0, Math.min(bar.width - width,
+				center - width / 2))
+		}
+		y: ShellConfig.bar.surfaceHeight
+			- ShellConfig.bar.mediaPopupHoverBridge
+		z: ShellConfig.frame.borderZ + 1
+	}
+
+	FloralWindowPopup {
+		id: windowPopup
+
+		triggerHovered: windowSummary.hovered
+		x: {
+			const center = leftModules.x + windowSummary.x
+				+ windowSummary.width / 2
 			return Math.max(0, Math.min(bar.width - width,
 				center - width / 2))
 		}

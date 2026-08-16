@@ -25,8 +25,9 @@ Item {
 	readonly property int cellSpacing: Math.min(ShellConfig.scaled(5), 6)
 	readonly property int contentGap: Math.min(ShellConfig.scaled(7), 8)
 	readonly property bool hovered: popupHover.hovered
+	readonly property bool menuOpen: trayMenu.opened
 	readonly property bool shouldOpen: itemCount > 0
-		&& (triggerHovered || hovered || pinnedOpen)
+		&& (triggerHovered || hovered || pinnedOpen || menuOpen)
 	readonly property real visualTop: ShellConfig.bar.mediaPopupHoverBridge
 		- ShellConfig.bar.mediaPopupBorderOverlap
 	readonly property real panelHeight: ShellConfig.bar.mediaPopupBorderOverlap
@@ -46,11 +47,14 @@ Item {
 
 	function close(): void {
 		pinnedOpen = false;
+		trayMenu.beginClose();
 	}
 
 	onItemCountChanged: {
-		if (itemCount === 0)
+		if (itemCount === 0) {
 			pinnedOpen = false;
+			trayMenu.beginClose();
+		}
 	}
 
 	visible: itemCount > 0 && offsetScale < 1
@@ -67,6 +71,12 @@ Item {
 	PopupBridge {
 		active: root.shouldOpen
 		width: root.width
+	}
+
+	FloralTrayMenu {
+		id: trayMenu
+
+		onDismissed: root.pinnedOpen = false
 	}
 
 	Item {
@@ -223,6 +233,14 @@ Item {
 										root.hoveredTitle = "";
 								}
 								onClicked: event => {
+									if (event.button === Qt.LeftButton
+											&& trayCell.modelData.onlyMenu
+											&& trayCell.modelData.hasMenu) {
+										root.pinnedOpen = true;
+										trayMenu.openFor(trayCell,
+											trayCell.modelData, false);
+										return;
+									}
 									if (event.button === Qt.RightButton)
 										trayCell.modelData.secondaryActivate();
 									else
@@ -231,6 +249,68 @@ Item {
 								}
 								onWheel: event => trayCell.modelData.scroll(
 									event.angleDelta.y, false)
+							}
+
+							Item {
+								id: menuButton
+
+								anchors {
+									right: parent.right
+									bottom: parent.bottom
+								}
+								width: 17
+								height: 17
+								visible: trayCell.modelData.hasMenu
+								opacity: trayCell.hovered
+									|| trayCell.modelData.onlyMenu ? 1 : 0
+								z: 3
+
+								Rectangle {
+									anchors.fill: parent
+									radius: 6
+									color: menuPointer.containsMouse
+										? Theme.accentWashStrong
+										: Theme.panelHighlight
+									border.width: 1
+									border.color: Theme.frameBorderSoft
+								}
+
+								Column {
+									anchors.centerIn: parent
+									spacing: 2
+
+									Repeater {
+										model: 3
+
+										Rectangle {
+											width: 2
+											height: 2
+											radius: 1
+											color: Theme.moduleLabel
+										}
+									}
+								}
+
+								MouseArea {
+									id: menuPointer
+
+									anchors.fill: parent
+									hoverEnabled: true
+									cursorShape: Qt.PointingHandCursor
+									onClicked: {
+										root.pinnedOpen = true;
+										trayMenu.openFor(trayCell,
+											trayCell.modelData, false);
+									}
+								}
+
+								Behavior on opacity {
+									NumberAnimation {
+										duration: FloralSettings.duration(
+											ShellConfig.visuals.motionFast)
+										easing.type: Easing.OutCubic
+									}
+								}
 							}
 						}
 					}

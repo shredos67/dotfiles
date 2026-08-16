@@ -11,8 +11,9 @@ Item {
 		FloralSystemService.audioSource !== null
 		&& FloralSystemService.inputMuted
 	readonly property bool doNotDisturb: Notifs.dnd
+	readonly property bool idleActive: IdleInhibitorService.enabled
 	readonly property bool hasActiveStatus:
-		recording || microphoneMuted || doNotDisturb
+		recording || microphoneMuted || doNotDisturb || idleActive
 
 	function elapsedLabel(seconds: real): string {
 		const total = Math.max(0, Math.floor(seconds));
@@ -52,6 +53,15 @@ Item {
 			accent: Theme.statusWarning
 			onPrimaryActivated: FloralSystemService.setInputMuted(false)
 			onSecondaryActivated: FloralSystemService.setInputMuted(false)
+		}
+
+		StatusPill {
+			visible: root.idleActive
+			kind: "awake"
+			label: "awake"
+			accent: Theme.accentTertiary
+			onPrimaryActivated: IdleInhibitorService.enabled = false
+			onSecondaryActivated: IdleInhibitorService.enabled = false
 		}
 
 		StatusPill {
@@ -170,6 +180,18 @@ Item {
 						context.moveTo(3, 3)
 						context.lineTo(17, 17)
 						context.stroke()
+						return
+					}
+
+					if (markKind === "awake") {
+						context.beginPath()
+						context.moveTo(2.5, 10)
+						context.quadraticCurveTo(10, 3.5, 17.5, 10)
+						context.quadraticCurveTo(10, 16.5, 2.5, 10)
+						context.stroke()
+						context.beginPath()
+						context.arc(10, 10, 2.4, 0, Math.PI * 2)
+						context.fill()
 						return
 					}
 

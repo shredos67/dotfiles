@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 
 Item {
@@ -31,22 +30,13 @@ Item {
 	}
 
 	Image {
-		id: artwork
-
 		anchors.fill: parent
-		source: `file://${Quickshell.env("HOME")}/.config/hypr/assets/imgborders-floral-mask.png`
+		source: `file://${Quickshell.env("HOME")}/.config/hypr/assets/imgborders-floral.png?theme=${encodeURIComponent(root.ornamentColor.toString())}`
 		sourceClipRect: root.clipRect
 		fillMode: Image.PreserveAspectFit
 		smooth: true
 		mipmap: true
-		visible: false
-	}
-
-	MultiEffect {
-		anchors.fill: artwork
-		source: artwork
-		colorization: 1
-		colorizationColor: root.ornamentColor
 		opacity: root.strength
+		cache: true
 	}
 }

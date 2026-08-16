@@ -10,6 +10,7 @@ Item {
 
     property string wallpaperDirectory: `${Quickshell.env("HOME")}/Wallpapers`
     property string currentWallpaper: ""
+    readonly property bool active: carousel.active
 
     readonly property string pywalStatePath: (Quickshell.env("XDG_CACHE_HOME") || `${Quickshell.env("HOME")}/.cache`) + "/wal/colors.json"
     readonly property string applyScript: `${Quickshell.env("HOME")}/wallpaperCarousel/apply-wallpaper.sh`
@@ -30,6 +31,18 @@ Item {
 
         root.currentWallpaper = path;
         Quickshell.execDetached([root.applyScript, path]);
+    }
+
+    function open() {
+        carousel.open();
+    }
+
+    function close() {
+        carousel.close();
+    }
+
+    function toggle() {
+        carousel.toggle();
     }
 
     Carousel {

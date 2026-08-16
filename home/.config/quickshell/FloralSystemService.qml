@@ -19,6 +19,7 @@ Singleton {
     property bool serviceCheckComplete: false
     property var audioSinks: []
     property var audioSources: []
+    property var audioStreams: []
     property real brightness: 0
     property string osPrettyName: ""
     property string kernel: ""
@@ -58,6 +59,36 @@ Singleton {
         return second.strength - first.strength;
     })
 
+    readonly property var savedNetworks: {
+        const nearby = root.networks;
+        const saved = Nmcli.savedConnectionSsids;
+        const security = Nmcli.savedConnectionSecurity;
+        return [...saved].sort((first, second) =>
+            String(first).localeCompare(String(second))).map(ssid => {
+            const target = String(ssid || "").toLowerCase().trim();
+            const network = nearby.find(item =>
+                String(item?.ssid || "").toLowerCase().trim() === target) ?? null;
+            const keyManagement = security[target]
+                || Nmcli.savedSecurityFor(ssid);
+            const active = !!network?.active
+                || String(root.activeConnection || "").toLowerCase().trim()
+                    === target;
+            return {
+                ssid,
+                network,
+                active,
+                available: network !== null,
+                security: network
+                    ? root.networkSecure(network)
+                        ? String(network.security || "secured")
+                        : "open"
+                    : keyManagement
+                        ? Nmcli.securityLabel(keyManagement).toLowerCase()
+                        : "security unavailable"
+            };
+        });
+    }
+
     readonly property var bluetoothAdapter: bluezAvailable
         ? Bluetooth.defaultAdapter
         : null
@@ -93,6 +124,7 @@ Singleton {
 
     function refresh() {
         Nmcli.refreshStatus(() => {});
+        Nmcli.loadSavedConnections(() => {});
         if (Nmcli.wifiEnabled)
             Nmcli.getNetworks(() => {});
         refreshAudioNodes();
@@ -104,16 +136,57 @@ Singleton {
     function refreshAudioNodes() {
         const sinks = [];
         const sources = [];
+        const streams = [];
         for (const node of Pipewire.nodes.values) {
-            if (node.isStream)
-                continue;
-            if (node.isSink)
+            if (node.isStream && node.audio)
+                streams.push(node);
+            else if (node.isSink)
                 sinks.push(node);
             else if (node.audio)
                 sources.push(node);
         }
         audioSinks = sinks;
         audioSources = sources;
+        audioStreams = streams;
+    }
+
+    function audioStreamName(node) {
+        if (!node)
+            return "audio stream";
+        const properties = node.properties || {};
+        return properties["application.name"]
+            || properties["application.process.binary"]
+            || node.description
+            || node.name
+            || "audio stream";
+    }
+
+    function audioStreamDetail(node) {
+        if (!node)
+            return "application audio";
+        const properties = node.properties || {};
+        const title = root.audioStreamName(node);
+        const candidates = [
+            properties["media.name"],
+            properties["node.description"],
+            node.description,
+            node.name
+        ];
+        return candidates.find(candidate => candidate
+            && String(candidate).trim() !== String(title).trim())
+            || "application audio";
+    }
+
+    function setAudioStreamVolume(node, value) {
+        if (!node?.ready || !node.audio)
+            return;
+        node.audio.muted = false;
+        node.audio.volume = Math.max(0, Math.min(1, Number(value) || 0));
+    }
+
+    function setAudioStreamMuted(node, value) {
+        if (node?.ready && node.audio)
+            node.audio.muted = !!value;
     }
 
     function setOutputVolume(value) {
@@ -276,6 +349,46 @@ Singleton {
         passwordRequested = networkSecure(pendingNetwork);
     }
 
+    function activateSavedNetwork(ssid) {
+        const name = String(ssid || "").trim();
+        if (!name || networkBusy || !Nmcli.wifiEnabled)
+            return;
+        const target = name.toLowerCase();
+        const nearby = root.networks.find(network =>
+            String(network?.ssid || "").toLowerCase().trim() === target);
+        if (nearby) {
+            root.chooseNetwork(nearby);
+            return;
+        }
+        networkBusy = true;
+        networkMessage = `connecting to ${name}`;
+        Nmcli.activateConnection(Nmcli.savedConnectionNameFor(name), result => {
+            networkBusy = false;
+            networkMessage = result?.success
+                ? `connected to ${name}`
+                : `could not connect to ${name}`;
+            Nmcli.refreshStatus(() => {});
+            Nmcli.getNetworks(() => {});
+        });
+    }
+
+    function forgetSavedNetwork(ssid) {
+        const name = String(ssid || "").trim();
+        if (!name || networkBusy)
+            return;
+        networkBusy = true;
+        networkMessage = `forgetting ${name}`;
+        Nmcli.forgetNetwork(name, result => {
+            networkBusy = false;
+            networkMessage = result?.success
+                ? `forgot ${name}`
+                : `could not forget ${name}`;
+            Nmcli.refreshStatus(() => {});
+            if (Nmcli.wifiEnabled)
+                Nmcli.getNetworks(() => {});
+        });
+    }
+
     function toggleBluetoothDevice(device) {
         if (!device)
             return;
@@ -329,7 +442,8 @@ Singleton {
             root.audioSink,
             root.audioSource,
             ...root.audioSinks,
-            ...root.audioSources
+            ...root.audioSources,
+            ...root.audioStreams
         ].filter(node => node)
     }
 

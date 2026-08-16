@@ -21,6 +21,7 @@ Singleton {
     readonly property AccessPoint active: networks.find(n => n.active) ?? null
     property list<string> savedConnections: []
     property list<string> savedConnectionSsids: []
+    property var savedConnectionNamesBySsid: ({})
     // Map of saved Wi-Fi SSID (lowercased) -> security type
     property var savedConnectionSecurity: ({})
 
@@ -502,6 +503,7 @@ Singleton {
                 root.savedConnections = [];
                 root.savedConnectionSsids = [];
                 root.savedConnectionSecurity = {};
+                root.savedConnectionNamesBySsid = {};
                 if (callback)
                     callback([]);
                 return;
@@ -532,6 +534,7 @@ Singleton {
         root.savedConnections = connections;
 
         root.savedConnectionSecurity = {};
+        root.savedConnectionNamesBySsid = {};
 
         if (wifiConnections.length > 0) {
             root.wifiConnectionQueue = wifiConnections;
@@ -553,7 +556,7 @@ Singleton {
 
             executeCommand(["-t", "-f", `${root.wirelessSsidField},${root.securityKeyMgmt}`, root.nmcliCommandConnection, "show", connectionName], result => {
                 if (result.success) {
-                    processSsidOutput(result.output);
+                    processSsidOutput(result.output, connectionName);
                 }
                 queryNextSsid(callback);
             });
@@ -565,7 +568,7 @@ Singleton {
         }
     }
 
-    function processSsidOutput(output: string): void {
+    function processSsidOutput(output: string, connectionName: string): void {
         const ssidPrefix = "802-11-wireless.ssid:";
         const keyMgmtPrefix = `${root.securityKeyMgmt}:`;
 
@@ -593,6 +596,10 @@ Singleton {
         const security = Object.assign({}, root.savedConnectionSecurity);
         security[ssidLower] = keyMgmt;
         root.savedConnectionSecurity = security;
+
+        const names = Object.assign({}, root.savedConnectionNamesBySsid);
+        names[ssidLower] = connectionName;
+        root.savedConnectionNamesBySsid = names;
     }
 
     function securityLabel(keyMgmt: string): string {
@@ -621,6 +628,16 @@ Singleton {
         if (!ssid || ssid.length === 0)
             return "";
         return root.savedConnectionSecurity[ssid.toLowerCase().trim()] || "";
+    }
+
+    function savedConnectionNameFor(ssid: string): string {
+        if (!ssid || ssid.length === 0)
+            return "";
+        const key = ssid.toLowerCase().trim();
+        return root.savedConnectionNamesBySsid[key]
+            || root.savedConnections.find(name => name
+                && name.toLowerCase().trim() === key)
+            || ssid;
     }
 
     function hasSavedProfile(ssid: string): bool {
@@ -762,7 +779,7 @@ Singleton {
             return;
         }
 
-        const connectionName = root.savedConnections.find(conn => conn && conn.toLowerCase().trim() === ssid.toLowerCase().trim()) || ssid;
+        const connectionName = root.savedConnectionNameFor(ssid);
 
         executeCommand([root.nmcliCommandConnection, "delete", connectionName], result => {
             if (result.success) {

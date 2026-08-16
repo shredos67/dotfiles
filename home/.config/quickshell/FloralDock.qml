@@ -282,6 +282,7 @@ Scope {
                 || edgeHover.hovered
                 || FloralSettings.dockLauncherOpen
                 || FloralSettings.settingsOpen
+                || dockTrayMenu.opened
             readonly property real inputTop: FloralSettings.dockLauncherOpen
                 ? 0
                 : raised ? Math.max(0, dockSurface.y - 48)
@@ -314,6 +315,32 @@ Scope {
             WlrLayershell.keyboardFocus: FloralSettings.dockLauncherOpen
                 ? WlrKeyboardFocus.Exclusive
                 : WlrKeyboardFocus.None
+
+            FloralTrayMenu {
+                id: dockTrayMenu
+            }
+
+            Connections {
+                target: FloralSettings
+
+                function onDockLauncherOpenChanged(): void {
+                    if (FloralSettings.dockLauncherOpen)
+                        dockTrayMenu.beginClose();
+                }
+
+                function onSettingsOpenChanged(): void {
+                    if (FloralSettings.settingsOpen)
+                        dockTrayMenu.beginClose();
+                }
+            }
+
+            Connections {
+                target: FloralShellState
+
+                function onPanelClaimed(): void {
+                    dockTrayMenu.beginClose();
+                }
+            }
 
             mask: Region {
                 x: FloralSettings.dockEnabled
@@ -427,6 +454,25 @@ Scope {
                     onClicked: mouse.accepted = true
                 }
 
+                Rectangle {
+                    anchors.fill: dockClockSummary
+                    anchors.margins: -8
+                    radius: ShellConfig.visuals.controlRadius
+                    color: dockClockPointer.containsMouse
+                        ? Theme.panelHighlight : "transparent"
+                    border.width: dockClockPointer.containsMouse ? 1 : 0
+                    border.color: Theme.frameBorderSoft
+                    visible: !FloralSettings.dockLauncherOpen
+                    z: 1
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: FloralSettings.duration(110)
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                }
+
                 Column {
                     id: dockClockSummary
 
@@ -470,6 +516,26 @@ Scope {
                             duration: FloralSettings.duration(120)
                             easing.type: Easing.OutCubic
                         }
+                    }
+                }
+
+                MouseArea {
+                    id: dockClockPointer
+
+                    anchors.fill: dockClockSummary
+                    anchors.margins: -8
+                    enabled: !FloralSettings.dockLauncherOpen
+                    hoverEnabled: true
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    cursorShape: Qt.PointingHandCursor
+                    z: 4
+                    onClicked: event => {
+                        Quickshell.execDetached([
+                            "qs", "ipc", "call",
+                            event.button === Qt.RightButton
+                                ? "calendar" : "dashboard",
+                            "toggle"
+                        ])
                     }
                 }
 
@@ -846,6 +912,13 @@ Scope {
                                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: event => {
+									if (event.button === Qt.LeftButton
+											&& trayItem.modelData.onlyMenu
+											&& trayItem.modelData.hasMenu) {
+										dockTrayMenu.openFor(trayItem,
+											trayItem.modelData, true);
+										return;
+									}
                                     if (event.button === Qt.RightButton)
                                         trayItem.modelData.secondaryActivate();
                                     else
@@ -854,6 +927,66 @@ Scope {
                                 onWheel: event => trayItem.modelData.scroll(
                                     event.angleDelta.y, false)
                             }
+
+							Item {
+								id: dockMenuButton
+
+								anchors {
+									right: parent.right
+									bottom: parent.bottom
+									bottomMargin: 5
+								}
+								width: 17
+								height: 17
+								visible: trayItem.modelData.hasMenu
+								opacity: trayItem.hovered
+									|| trayItem.modelData.onlyMenu ? 1 : 0
+								z: 4
+
+								Rectangle {
+									anchors.fill: parent
+									radius: 6
+									color: dockMenuPointer.containsMouse
+										? Theme.accentWashStrong
+										: Theme.panelHighlight
+									border.width: 1
+									border.color: Theme.frameBorderSoft
+								}
+
+								Row {
+									anchors.centerIn: parent
+									spacing: 2
+
+									Repeater {
+										model: 3
+
+										Rectangle {
+											width: 2
+											height: 2
+											radius: 1
+											color: Theme.moduleLabel
+										}
+									}
+								}
+
+								MouseArea {
+									id: dockMenuPointer
+
+									anchors.fill: parent
+									hoverEnabled: true
+									cursorShape: Qt.PointingHandCursor
+									onClicked: dockTrayMenu.openFor(trayItem,
+										trayItem.modelData, true)
+								}
+
+								Behavior on opacity {
+									NumberAnimation {
+										duration: FloralSettings.duration(
+											ShellConfig.visuals.motionFast)
+										easing.type: Easing.OutCubic
+									}
+								}
+							}
                         }
                     }
 

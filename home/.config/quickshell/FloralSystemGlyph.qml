@@ -85,11 +85,21 @@ Canvas {
             context.beginPath();
             context.arc(12, 15, 1.2, 0, Math.PI * 2);
             context.fill();
+        } else if (kind === "logout") {
+            context.strokeRect(5, 4, 9, 16);
+            line(context, [[10, 12], [21, 12]]);
+            line(context, [[17, 8], [21, 12], [17, 16]]);
         } else if (kind === "suspend") {
             context.beginPath();
             context.arc(12, 12, 8, -1.15, 1.15);
             context.stroke();
             line(context, [[12, 3], [12, 12]]);
+        } else if (kind === "hibernate") {
+            context.beginPath();
+            context.arc(11, 12, 8, Math.PI * 0.34, Math.PI * 1.66);
+            context.arc(14.5, 12, 6, Math.PI * 1.66, Math.PI * 0.34, true);
+            context.closePath();
+            context.fill();
         } else if (kind === "power") {
             context.beginPath();
             context.arc(12, 12, 8, -0.82, Math.PI * 1.82);
