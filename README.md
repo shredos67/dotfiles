@@ -28,7 +28,7 @@ backups land in
 ~/.local/state/dotfiles-backups/<date and time>
 ```
 
-options because blindly piping my whole desktop into sh is kinda rude
+options
 
 ```text
 --dry-run          print changes and touch nothing
