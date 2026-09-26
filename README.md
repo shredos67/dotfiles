@@ -1,6 +1,6 @@
-# m2 dotfiles, flowers and way too much qml
+# m2 dotfiles, flower borders all written in qml
 
-this is my fedora hyprland setup for an apple m2 machine, it started as a bar and then i apparently decided every part of the desktop needed matching engraved borders
+this is my fedora hyprland setup for an apple m2 machine,
 
 ![the desktop with the wallpaper picker open](showcase/desktop.png)
 
